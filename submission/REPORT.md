@@ -421,6 +421,27 @@ thật ít nhất một lần trên một sự cố thật**, nếu không thì 
 mỗi khi baseline đổi**, và coi việc alert ngừng bắn là tín hiệu phải kiểm tra lại ngưỡng chứ không
 phải tin tưởng mừng.
 
+**Sự cố bảo mật do chính công cụ của tôi gây ra — và cách tôi xử lý.** Khi chạy
+`secret_scan.sh`, script in ra giá trị key dạng rõ để chứng minh "không tìm thấy". Vì file kết quả
+đó là evidence được commit, **key đã lọt vào 2 commit cục bộ** — và chính script đó báo rằng bản thân
+nó là một leak. Đây là loại lỗi nguy hiểm nhất trong phần bảo mật: công cụ kiểm tra rò rỉ trở thành
+bản thân sự rò rỉ.
+
+Cách xử lý, theo đúng thứ tự:
+
+1. **Sửa công cụ trước**: script giờ mask giá trị (`pk***49`) và tự loại trừ output của chính nó khỏi
+   phép grep trong working tree.
+2. **Kiểm tra mức độ lan truyền**: `git log origin/main..HEAD` = 11 commit, tức **chưa commit nào
+   được push**; `origin/main` vẫn ở commit starter `13b6066`. Key chưa từng rời khỏi máy này.
+3. **Dọn sạch history** thay vì để lại key đã "rotate" mà vẫn nằm trong object store: `git
+   filter-branch` chỉ tới `34615de^..HEAD`, xoá `refs/original`, `reflog expire`, `git gc --prune=now`.
+4. **Xác minh lại bằng chính script**: quét toàn bộ object store của repo — không còn blob nào chứa
+   key. Bằng chứng: `evidence/16-secret-scan.png`, mục "not in git history" cả hai key.
+
+**Khuyến nghị vẫn nên rotate key trên phía Langfuse.** Lý do: dù key chưa từng bị push, nó đã nằm
+trong git object cục bộ trong một khoảng thời gian, và nguyên tắc xử lý sự cố credential là coi nó là
+đã lộ. Tôi không tự rotate được vì cần đăng nhập UI. Đây là việc còn lại của tôi.
+
 **Hạn chế hoặc phần chưa hoàn thành.**
 
 - **Ảnh UI của Langfuse vẫn thiếu.** Tôi đã chụp được ảnh cho mọi mục bằng Playwright/Chromium,
@@ -448,11 +469,15 @@ phải tin tưởng mừng.
 - [x] Repository chạy lại được theo README — `python -m pytest -q` 50 passed, `validate_logs.py`
       100/100, `validate_dashboard.py` 6/6, `evaluate_alerts.py` im lặng trên traffic bình thường.
 - [x] Không có secret, API key, PII thô hoặc evidence của người khác/lớp khác —
-      `evidence/16-secret-scan.txt` quét cả working tree lẫn git history bằng chính giá trị key trong
-      `.env`; kết quả `clean`. File evidence PII đã che giá trị để không trông giống rò rỉ.
+      `evidence/16-secret-scan.txt` quét working tree, git history **và toàn bộ object store** bằng
+      chính giá trị key trong `.env`; kết quả `clean`. File evidence PII đã che giá trị để không trông
+      giống rò rỉ.
+- [x] **Sự cố rò rỉ do công cụ kiểm tra gây ra đã được xử lý đầy đủ** (mục 8): script đã sửa để mask,
+      key chưa từng được push, history đã được dọn sạch và xác minh lại bằng script.
 - [ ] **Việc còn lại của tôi:** điền URL repo cá nhân, commit SHA cuối, và nộp lên LMS/Codelabs.
 - [x] **Challenge chính thức đã chạy** — `config/challenge.json` (cohort K4) đã được dùng đúng
       như tài liệu: `inject_incident.py` không truyền `--scenario`, `load_test.py --challenge`.
       Mục 7 có metric → log → trace → root cause, fix và 3 preventive measure.
 - [ ] **Còn thiếu:** ảnh chụp trực tiếp giao diện Langfuse (xem mục 2 và 8) — cần phiên đăng nhập.
-- [ ] **Việc của tôi:** điền URL repo cá nhân và commit SHA cuối, rồi nộp lên LMS/Codelabs.
+- [ ] **Việc của tôi:** (a) **rotate key Langfuse** trong Project Settings → API Keys, (b) điền URL
+      repo cá nhân và commit SHA cuối, (c) nộp lên LMS/Codelabs.
