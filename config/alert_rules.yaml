@@ -15,8 +15,8 @@ alerts:
   - name: slow_answers
     severity: high
     condition: >-
-      p95 of response_sent.latency_ms exceeds 3000 ms - users are waiting more
-      than three seconds for an answer.
+      p95 of response_sent.latency_ms exceeds 1000 ms - users are waiting more
+      than a second for an answer.
     type: symptom-based
     channel: slack
     slack_channel: "#day13-oncall"
@@ -24,7 +24,7 @@ alerts:
     runbook: docs/alerts.md#alert-1
     signal: latency_p95_ms
     operator: ">"
-    threshold: 3000
+    threshold: 1000
     window_minutes: 10
     duration: "10 minutes"
     for_minutes: 10
@@ -32,10 +32,19 @@ alerts:
     query: 'event == "response_sent" | percentile(latency_ms, [95])'
     # A single slow request must not page anyone, so the rule needs the
     # condition to hold for as long as the window it measures.
+    #
+    # RECALIBRATED from 3000 ms. The original threshold was derived from a measured
+    # P95 of 877 ms, but that baseline contained event-loop queueing
+    # (evidence/14-queueing-before-after.txt). After the queueing fix the honest
+    # baseline is 151 ms, leaving 3000 ms at 19.9x headroom - so loose that the
+    # challenge incident at 2651 ms (17.6x baseline) slipped past it and the alert
+    # stayed silent for the exact failure it was written to catch.
+    # 1000 ms is 6.6x the clean baseline and does fire for it.
     rationale: >-
       Fires on the user symptom, not on the retrieval that caused it. Under the
-      measured baseline (P95 877 ms) this has 3.4x headroom; the rag_slow
-      incident moves P95 to about 3380 ms and pages.
+      clean baseline (P95 151 ms) this has 6.6x headroom, and the challenge
+      incident (P95 2651 ms) pages. Verified in
+      evidence/12-alert-evaluation.txt.
 
   - name: answers_failing
     severity: critical

@@ -143,6 +143,34 @@ def test_output_token_spike_fires_only_the_cost_alert(tmp_path: Path) -> None:
     assert current["answers_failing"] == "OK"
 
 
+def test_threshold_catches_the_real_incident_latency(tmp_path: Path) -> None:
+    """Regression from the CP3 challenge.
+
+    The latency threshold was 3000 ms, derived from a baseline that still
+    contained event-loop queueing. After the queueing fix the honest baseline
+    is 151 ms, but 3000 ms stayed at 19.9x of headroom, so the real incident
+    (2651 ms) no longer fired the alert that was written to catch it. This test
+    pins the threshold to the incident it must catch, so a future baseline
+    change cannot quietly disarm it again.
+    """
+    clean_baseline_ms = 151
+    challenge_incident_ms = 2651
+    rules = yaml.safe_load(ALERTS.read_text(encoding="utf-8"))["alerts"]
+    threshold = next(r["threshold"] for r in rules if r["name"] == "slow_answers")
+
+    assert threshold < challenge_incident_ms, "threshold would miss the incident"
+    # Enough headroom that a healthy request never pages.
+    assert threshold >= clean_baseline_ms * 4, "threshold is too tight for the baseline"
+
+    records = workload(
+        15,
+        latency_ms=challenge_incident_ms, ttft_ms=50, tokens_in=30, tokens_out=120,
+        cost_usd=0.002, quality_score=0.9, tool_name="retrieval", tool_success=True,
+    )
+    rows, _ = evaluate(tmp_path, records)
+    assert states(rows)["slow_answers"] == "FIRING"
+
+
 def test_empty_log_produces_no_false_pages(tmp_path: Path) -> None:
     rows, result = evaluate(tmp_path, [])
 

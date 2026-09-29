@@ -24,16 +24,20 @@ same log the dashboard reads, so the two can never disagree.
 
 - **Name:** `slow_answers`
 - **Severity:** high
-- **Condition:** p95 of `response_sent.latency_ms` > 3000 ms — users are waiting more than three seconds.
+- **Condition:** p95 of `response_sent.latency_ms` > 1000 ms — users are waiting more than a second.
 - **Duration:** 10 minutes (window 10 minutes, `for_minutes: 10`)
 - **SLI/SLO:** `fast_successful_requests` — this alert is the SLO's early warning.
 - **Channel:** Slack `#day13-oncall` · **Owner:** backend-oncall
-- **Verified firing:** with `--scenario rag_slow`, p95 = 5416 ms → FIRING; on the healthy baseline p95 = 877 ms → OK.
+- **Verified firing:** with `--scenario rag_slow`, p95 = 2651 ms → FIRING; on the healthy baseline p95 = 151 ms → OK.
+- **Recalibrated from 3000 ms.** The old threshold came from a baseline that still contained
+  event-loop queueing. Once that was fixed the baseline fell to 151 ms, and 3000 ms was
+  19.9x of headroom — loose enough that the same incident stopped firing it. Treat an
+  alert that goes quiet as a reason to re-derive the threshold, not as good news.
 
 ### Impact on users
 
 Answers still arrive, but slowly enough that the request looks hung. The SLO's
-`good_event` (`latency_ms <= 3000`) stops being satisfied, so the error budget
+`good_event` (`latency_ms <= 1000`) stops being satisfied, so the error budget
 starts burning for as long as the alert is firing.
 
 ### Three first checks
@@ -42,7 +46,7 @@ starts burning for as long as the alert is firing.
    trace. In the tree, compare `retrieve-context` against `generate-response`:
 
    ```bash
-   jq -r 'select(.event=="response_sent" and .latency_ms>3000)
+   jq -r 'select(.event=="response_sent" and .latency_ms>1000)
           | "\(.correlation_id) \(.latency_ms)ms ttft=\(.ttft_ms)ms"' data/logs.jsonl
    ```
 
@@ -73,7 +77,7 @@ starts burning for as long as the alert is firing.
 - **If the model call is the slow span:** roll back the prompt to the last known
   good version, then reduce `max_tokens` — cost and latency move together.
 - **If traffic is the cause:** shed load; do not page the model team.
-- Freeze prompt and model changes until p95 is back under 1.5 s, because every
+- Freeze prompt and model changes until p95 is back under 500 ms, because every
   further change spends the same error budget.
 
 ---

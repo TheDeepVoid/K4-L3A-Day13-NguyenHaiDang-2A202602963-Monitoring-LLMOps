@@ -24,6 +24,7 @@ import base64
 import json
 import os
 import sys
+import time
 import urllib.parse
 import urllib.request
 from datetime import datetime, timedelta, timezone
@@ -153,7 +154,9 @@ def langfuse_traces(correlation_ids: list[str], since: datetime) -> dict[str, li
     return out
 
 
-def step_traces(correlation_ids: list[str], since: datetime) -> None:
+def step_traces(
+    correlation_ids: list[str], since: datetime, retries: int = 6, retry_wait: float = 5.0
+) -> None:
     print("=" * 78)
     print("STEP 3 - TRACES: which span is responsible inside those requests?")
     print("=" * 78)
@@ -162,16 +165,28 @@ def step_traces(correlation_ids: list[str], since: datetime) -> None:
         print("export the values from .env (or run with --env-file) to include this step\n")
         return
 
-    try:
-        traces = langfuse_traces(correlation_ids, since)
-    except Exception as exc:  # network, auth or a missing trace
-        print(f"could not reach Langfuse: {type(exc).__name__}: {exc}\n")
-        return
+    # Trace ingestion is asynchronous: the SDK exports in the background and the
+    # API needs a few seconds before the rows are queryable. Retrying here beats
+    # telling the operator "no trace found" for a request that is merely late.
+    traces: dict[str, list[dict]] = {}
+    for attempt in range(1, retries + 1):
+        try:
+            traces = langfuse_traces(correlation_ids, since)
+        except Exception as exc:  # network, auth or a missing trace
+            print(f"could not reach Langfuse: {type(exc).__name__}: {exc}\n")
+            return
+        if traces:
+            if attempt > 1:
+                print(f"  (traces became queryable after {attempt} attempts)")
+            break
+        if attempt < retries:
+            time.sleep(retry_wait)
 
     if not traces:
         print("no trace found for these correlation_ids.\n"
-              "Remember traces need a few seconds to land, and that the starter code\n"
-              "before CP2 produced only a root observation with no child spans.\n")
+              "Either the traces have not been ingested yet, or the code that produced\n"
+              "them predates the CP2 instrumentation - a root observation with no child\n"
+              "spans cannot localise a step.\n")
         return
 
     for correlation_id, rows in traces.items():
@@ -216,6 +231,18 @@ def main() -> int:
                         help="ms; a request above this is treated as symptomatic")
     parser.add_argument("--top", type=int, default=3, help="how many slow requests to trace")
     parser.add_argument("--skip-traces", action="store_true")
+    parser.add_argument(
+        "--trace-retries",
+        type=int,
+        default=6,
+        help="how many times to re-query Langfuse while traces are still ingesting",
+    )
+    parser.add_argument(
+        "--trace-retry-wait",
+        type=float,
+        default=5.0,
+        help="seconds between those retries",
+    )
     args = parser.parse_args()
 
     records = load_records(args.logs)
@@ -231,7 +258,12 @@ def main() -> int:
     step_metrics(records)
     slow = step_logs(records, args.latency_threshold, args.top)
     if slow and not args.skip_traces:
-        step_traces([r["correlation_id"] for r in slow], first - timedelta(minutes=5))
+        step_traces(
+            [r["correlation_id"] for r in slow],
+            first - timedelta(minutes=5),
+            retries=args.trace_retries,
+            retry_wait=args.trace_retry_wait,
+        )
     return 0
 
 

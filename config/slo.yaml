@@ -1,16 +1,25 @@
 # SLO for the Day 13 lab service.
 #
 # Thresholds are justified against my own measured baseline, not copied from
-# the starter. Measurements (evidence/11-dashboard-overview.txt):
-#   latency P50 = 150 ms, P95 = 877 ms, P99 = 877 ms, TTFT P95 = 50 ms
-#   retrieval is 0-1 ms, the model call is 151 ms
-#   error rate 0.0%, retrieval success 100%, cost 0.0242 USD for 10 requests
+# the starter. Clean measurements (evidence/01-pytest-and-final-checks.txt):
+#   latency P50 = 151 ms, P95 = 151 ms, P99 = 151 ms, TTFT P95 = 50 ms
+#   retrieval 0-1 ms, model call 151 ms, error rate 0%, retrieval success 100%
 #
-# The 3 s "good" latency threshold is deliberately just above the P95 baseline
-# (877 ms) but below the cost of a degraded retrieval: the rag_slow incident
-# adds 2.5 s to every request, which lands P95 at about 3.38 s and therefore
-# breaks this SLI. That gap is the point of the threshold - it is reachable by
-# a real symptom instead of being so tight it fires on normal noise.
+# RECALIBRATION - read this before changing the numbers again.
+# The first version of this file used `latency_ms <= 3000` and justified it
+# against a measured P95 of 877 ms. That 877 ms was itself contaminated: the
+# /chat handler was pinning the event loop, so the baseline contained queueing
+# time (evidence/14-queueing-before-after.txt). After moving the blocking agent
+# call into a threadpool the honest baseline is 151 ms, and 3000 ms became
+# 19.9x of headroom - loose enough that the challenge incident (rag_slow,
+# 2651 ms, 17.6x baseline) no longer breached this SLI at all. A threshold
+# calibrated on a contaminated baseline silently disarms itself the moment the
+# contamination is removed.
+#
+# 1000 ms is 6.6x the clean baseline: far enough above normal variance to avoid
+# paging on noise, tight enough that a 2.5 s retrieval stall is caught. Re-derive
+# this whenever the baseline moves, and treat "the alert stopped firing" as a
+# reason to re-check the threshold, not as good news.
 service: day13-l3a-monitoring-llmops-lab
 
 primary_slo:
@@ -20,7 +29,7 @@ primary_slo:
   # requests burn budget too, instead of being invisible.
   window: 28d
   sli:
-    good_event: 'event == "response_sent" and latency_ms <= 3000'
+    good_event: 'event == "response_sent" and latency_ms <= 1000'
     total_event: 'event == "request_received"'
   target_percent: 99.5
   error_budget_percent: 0.5
@@ -30,9 +39,10 @@ primary_slo:
   # i.e. budget may be consumed at 100 requests/minute for ~20 minutes before
   # it is exhausted, or by 10,080 bad requests spread over the whole month.
   note: >-
-    Baseline P95 is 877 ms, so a 3000 ms budget is roughly 3.4x the measured P95
-    and still leaves the healthy path untouched. The rag_slow incident pushes P95
-    to ~3380 ms and consumes budget, which is the behaviour I want to detect.
+    The 1000 ms budget is 6.6x the clean P95 of 151 ms and is breached by the
+    challenge incident at 2651 ms. The same rule at 3000 ms did not fire for the
+    very incident it was written to catch - see the recalibration note above and
+    evidence/12-alert-evaluation.txt.
 
 secondary_slos:
   # The primary SLO can be met while the app gets steadily more expensive, so
@@ -65,7 +75,7 @@ guardrails:
   # Hard limits. Unlike the SLOs these are not averaged away: a single
   # violation means something is wrong right now.
   error_rate_pct_max: 2
-  latency_p95_ms_max: 3000
+  latency_p95_ms_max: 1000
   ttft_p95_ms_max: 500
   daily_cost_usd_max: 2.5
   quality_score_avg_min: 0.75

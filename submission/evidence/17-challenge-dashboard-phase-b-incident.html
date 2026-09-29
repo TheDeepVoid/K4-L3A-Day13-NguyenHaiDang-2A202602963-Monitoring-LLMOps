@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<title>K4-L3A Day 13 Monitoring &amp; LLMOps</title>
+<meta http-equiv="refresh" content="30">
+<style>
+:root { color-scheme: light; }
+* { box-sizing: border-box; }
+body { margin: 0; padding: 24px; background: #f5f7fa; color: #12181f;
+       font: 14px/1.45 -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+header { display: flex; justify-content: space-between; align-items: baseline;
+         flex-wrap: wrap; gap: 8px; margin-bottom: 4px; }
+h1 { font-size: 20px; margin: 0; }
+.sub { color: #5b6875; font-size: 12px; }
+.banner { background: #e8f0fe; border: 1px solid #b9cdf5; border-radius: 6px;
+          padding: 10px 12px; margin: 12px 0 18px; font-size: 13px; }
+.grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+.panel { background: #fff; border: 1px solid #dde3ea; border-radius: 8px; padding: 14px 16px 8px; }
+.panel h2 { font-size: 14px; margin: 0 0 2px; }
+.panel .meta { color: #6b7885; font-size: 11px; margin-bottom: 10px; }
+.tiles { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
+.tile { border: 1px solid #dde3ea; border-radius: 6px; padding: 6px 9px; min-width: 92px; }
+.tile .tile-label { display: block; font-size: 10px; color: #6b7885; text-transform: uppercase;
+                    letter-spacing: .03em; }
+.tile .tile-value { font-size: 19px; font-weight: 600; }
+.tile .tile-unit { font-size: 10px; color: #8a96a3; margin-left: 3px; }
+.tile.ok { border-color: #b7e0c2; background: #f2fbf5; }
+.tile.breach { border-color: #f0b3b3; background: #fdf3f3; }
+.tile.na { background: #f7f9fb; }
+.chart { width: 100%; height: auto; }
+.grid-line { stroke: #eef1f5; stroke-width: 1; }
+.bar { fill: #4c7cf3; }
+.bar.red { fill: #e2685f; }
+.axis { font-size: 9px; fill: #8a96a3; }
+.value { font-size: 10px; fill: #3a4652; font-weight: 600; }
+.threshold { stroke: #d9822b; stroke-width: 1.5; stroke-dasharray: 4 3; }
+.threshold-label { font-size: 9px; fill: #b3621a; }
+.empty { color: #98a4b0; font-size: 12px; padding: 22px 0; }
+footer { margin-top: 18px; color: #6b7885; font-size: 11px; }
+code { background: #eceff3; padding: 1px 4px; border-radius: 3px; }
+</style></head>
+<body>
+<header>
+  <div>
+    <h1>K4-L3A Day 13 Monitoring &amp; LLMOps</h1>
+    <div class="sub">schema_version 1 &middot;
+      time_range 60 min &middot;
+      refresh every 30s</div>
+  </div>
+  <div class="sub">generated 2026-09-29 09:38:17 UTC</div>
+</header>
+<div class="banner">
+  Window <b>08:37:57</b> &rarr; <b>09:37:57</b>
+  (60 min, anchored on the newest log record).
+  Source of truth: <code>data/logs.jsonl</code> via the contract in
+  <code>config/dashboard.yaml</code>. 23 log records in window.
+  Regenerate with <code>python scripts/build_dashboard.py</code>.
+</div>
+<div class="grid"><section class="panel"><h2>Latency percentiles and TTFT</h2><div class="meta">id=latency &middot; unit=ms &middot; events=response_sent &middot; threshold: p95 lte 3000 &middot; source=data/logs.jsonl</div><div class="tiles"><div class="tile ok"><span class="tile-label">latency_p50</span><span class="tile-value">2651</span><span class="tile-unit">ms</span></div><div class="tile ok"><span class="tile-label">latency_p95</span><span class="tile-value">2651</span><span class="tile-unit">ms</span></div><div class="tile ok"><span class="tile-label">latency_p99</span><span class="tile-value">2651</span><span class="tile-unit">ms</span></div><div class="tile ok"><span class="tile-label">ttft_p95</span><span class="tile-value">50</span><span class="tile-unit">ms</span></div></div><svg viewBox="0 0 460 150" class="chart" role="img" aria-label="time series in ms"><line x1="44" y1="124.0" x2="452" y2="124.0" class="grid"/><text x="38" y="127.0" class="axis" text-anchor="end">0</text><line x1="44" y1="68.0" x2="452" y2="68.0" class="grid"/><text x="38" y="71.0" class="axis" text-anchor="end">1500</text><line x1="44" y1="12.0" x2="452" y2="12.0" class="grid"/><text x="38" y="15.0" class="axis" text-anchor="end">3000</text><rect x="121.5" y="25.0" width="253.0" height="99.0" class="bar"><title>09:37: 2651 ms</title></rect><text x="248.0" y="142" class="axis" text-anchor="middle">09:37</text><line x1="44" y1="12.0" x2="452" y2="12.0" class="threshold"/><text x="452" y="8.0" class="threshold-label" text-anchor="end">threshold lte 3000</text></svg></section><section class="panel"><h2>Request traffic</h2><div class="meta">id=traffic &middot; unit=requests/minute &middot; events=request_received &middot; threshold: rate_per_minute gte 1 &middot; source=data/logs.jsonl</div><div class="tiles"><div class="tile ok"><span class="tile-label">rate_per_minute</span><span class="tile-value">10.0</span><span class="tile-unit">req/min</span></div><div class="tile"><span class="tile-label">count</span><span class="tile-value">10</span><span class="tile-unit">requests</span></div></div><svg viewBox="0 0 460 150" class="chart" role="img" aria-label="time series in requests"><line x1="44" y1="124.0" x2="452" y2="124.0" class="grid"/><text x="38" y="127.0" class="axis" text-anchor="end">0</text><line x1="44" y1="68.0" x2="452" y2="68.0" class="grid"/><text x="38" y="71.0" class="axis" text-anchor="end">5</text><line x1="44" y1="12.0" x2="452" y2="12.0" class="grid"/><text x="38" y="15.0" class="axis" text-anchor="end">10</text><rect x="121.5" y="12.0" width="253.0" height="112.0" class="bar"><title>09:37: 10 requests</title></rect><text x="248.0" y="142" class="axis" text-anchor="middle">09:37</text></svg></section><section class="panel"><h2>Error rate and retrieval success</h2><div class="meta">id=errors &middot; unit=percent &middot; events=request_received,request_failed &middot; threshold: error_rate_pct lte 2 &middot; source=data/logs.jsonl</div><div class="tiles"><div class="tile ok"><span class="tile-label">error_rate_pct</span><span class="tile-value">0.0</span><span class="tile-unit">%</span></div><div class="tile ok"><span class="tile-label">tool_success_rate_pct</span><span class="tile-value">100.0</span><span class="tile-unit">%</span></div></div><svg viewBox="0 0 460 34" class="chart" role="img" aria-label="bars in count"><text x="122" y="19" class="axis" text-anchor="end">no errors</text><rect x="130" y="8" width="0.0" height="14" class="bar red"/><text x="136.0" y="19" class="value">0</text></svg></section><section class="panel"><h2>Cost over time</h2><div class="meta">id=cost &middot; unit=usd &middot; events=response_sent &middot; threshold: total lte 2.5 &middot; source=data/logs.jsonl</div><div class="tiles"><div class="tile ok"><span class="tile-label">total</span><span class="tile-value">0.0221</span><span class="tile-unit">USD</span></div><div class="tile"><span class="tile-label">requests priced</span><span class="tile-value">10</span><span class="tile-unit">responses</span></div></div><svg viewBox="0 0 460 150" class="chart" role="img" aria-label="time series in USD"><line x1="44" y1="124.0" x2="452" y2="124.0" class="grid"/><text x="38" y="127.0" class="axis" text-anchor="end">0</text><line x1="44" y1="68.0" x2="452" y2="68.0" class="grid"/><text x="38" y="71.0" class="axis" text-anchor="end">1</text><line x1="44" y1="12.0" x2="452" y2="12.0" class="grid"/><text x="38" y="15.0" class="axis" text-anchor="end">2</text><rect x="121.5" y="123.0" width="253.0" height="1.0" class="bar"><title>09:37: 0.0221 USD</title></rect><text x="248.0" y="142" class="axis" text-anchor="middle">09:37</text><line x1="44" y1="12.0" x2="452" y2="12.0" class="threshold"/><text x="452" y="8.0" class="threshold-label" text-anchor="end">threshold lte 2.5</text></svg></section><section class="panel"><h2>Input and output tokens</h2><div class="meta">id=tokens &middot; unit=tokens &middot; events=response_sent &middot; threshold: sum_by_field lte 50000 &middot; source=data/logs.jsonl</div><div class="tiles"><div class="tile ok"><span class="tile-label">tokens_in</span><span class="tile-value">910</span><span class="tile-unit">tokens</span></div><div class="tile ok"><span class="tile-label">tokens_out</span><span class="tile-value">1291</span><span class="tile-unit">tokens</span></div><div class="tile ok"><span class="tile-label">total</span><span class="tile-value">2201</span><span class="tile-unit">tokens</span></div></div><svg viewBox="0 0 460 150" class="chart" role="img" aria-label="time series in tokens"><line x1="44" y1="124.0" x2="452" y2="124.0" class="grid"/><text x="38" y="127.0" class="axis" text-anchor="end">0</text><line x1="44" y1="68.0" x2="452" y2="68.0" class="grid"/><text x="38" y="71.0" class="axis" text-anchor="end">25000</text><line x1="44" y1="12.0" x2="452" y2="12.0" class="grid"/><text x="38" y="15.0" class="axis" text-anchor="end">50000</text><rect x="121.5" y="119.1" width="253.0" height="4.9" class="bar"><title>09:37: 2201 tokens</title></rect><text x="248.0" y="142" class="axis" text-anchor="middle">09:37</text><line x1="44" y1="12.0" x2="452" y2="12.0" class="threshold"/><text x="452" y="8.0" class="threshold-label" text-anchor="end">threshold lte 50000</text></svg></section><section class="panel"><h2>Quality proxy</h2><div class="meta">id=quality &middot; unit=score_0_to_1 &middot; events=response_sent &middot; threshold: mean gte 0.75 &middot; source=data/logs.jsonl</div><div class="tiles"><div class="tile ok"><span class="tile-label">mean</span><span class="tile-value">0.84</span><span class="tile-unit">score 0-1</span></div><div class="tile"><span class="tile-label">scored</span><span class="tile-value">10</span><span class="tile-unit">responses</span></div></div><svg viewBox="0 0 460 150" class="chart" role="img" aria-label="time series in score"><line x1="44" y1="124.0" x2="452" y2="124.0" class="grid"/><text x="38" y="127.0" class="axis" text-anchor="end">0</text><line x1="44" y1="68.0" x2="452" y2="68.0" class="grid"/><text x="38" y="71.0" class="axis" text-anchor="end">0</text><line x1="44" y1="12.0" x2="452" y2="12.0" class="grid"/><text x="38" y="15.0" class="axis" text-anchor="end">1</text><rect x="121.5" y="12.0" width="253.0" height="112.0" class="bar"><title>09:37: 0.84 score</title></rect><text x="248.0" y="142" class="axis" text-anchor="middle">09:37</text><line x1="44" y1="24.0" x2="452" y2="24.0" class="threshold"/><text x="452" y="20.0" class="threshold-label" text-anchor="end">threshold lte 0.75</text></svg></section></div>
+<footer>
+  Dashed orange line = threshold from config/dashboard.yaml.
+  latency panel: P50/P95/P99 + TTFT P95. errors panel: error rate, breakdown by
+  error_type, retrieval success (tool_success_rate_pct).
+</footer>
+</body></html>
