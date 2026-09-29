@@ -8,7 +8,7 @@
 - **MSSV:** 2A202602963
 - **Lớp:** L3A
 - **Repository URL:** <https://github.com/TheDeepVoid/K4-L3A-Day13-NguyenHaiDang-2A202602963-Monitoring-LLMOps>
-- **Commit SHA cuối:** `__COMMIT_SHA__` — commit chứa toàn bộ bài nộp. Xem mục 9 về commit
+- **Commit SHA cuối:** `a8f5aed27ec10865dfa7c774595e7df5ade2edc7` — commit chứa toàn bộ bài nộp. Xem mục 9 về commit
   ghi lại chính con số này.
 - **Challenge ID:** `day13-k4-l3a-monitoring-llmops-v1`
 - **Tên project Langfuse cá nhân:** `day13-k4-l3a-2A202602963`
