@@ -15,20 +15,20 @@
 PHASE A - healthy baseline (no incident), same feature traffic
 ==========================================================================
 Challenge: day13-k4-l3a-monitoring-llmops-v1 | Cohort: K4
-[200] req-50bced92 | monitoring | 156.6ms
-[200] req-df36b866 | monitoring | 158.5ms
-[200] req-606f7aa0 | monitoring | 158.1ms
-[200] req-d75fa7a3 | monitoring | 158.8ms
-[200] req-279942ec | monitoring | 159.2ms
+[200] req-c2cd61ac | monitoring | 158.7ms
+[200] req-b8ab3316 | monitoring | 157.7ms
+[200] req-3af824b5 | monitoring | 158.7ms
+[200] req-e999bb4a | monitoring | 160.9ms
+[200] req-f335fa85 | monitoring | 162.4ms
 
 metrics:
-{"traffic":5,"latency_p50":150.0,"latency_p95":151.0,"latency_p99":151.0,"ttft_p95":50.0,"avg_cost_usd":0.0021,"total_cost_usd":0.0103,"tokens_in_total":455,"tokens_out_total":597,"error_breakdown":{},"quality_avg":0.84}
+{"traffic":5,"latency_p50":150.0,"latency_p95":151.0,"latency_p99":151.0,"ttft_p95":50.0,"avg_cost_usd":0.0023,"total_cost_usd":0.0116,"tokens_in_total":455,"tokens_out_total":685,"error_breakdown":{},"quality_avg":0.84}
 alerts:
 --------------------------------------------------------------------------------------------------
 slow_answers          OK       latency_p95_ms                     151  > 1000            12  backend-oncall
 answers_failing       OK       error_rate_pct                       0  > 2               12  backend-oncall
 retrieval_quality_dropOK       retrieval_success_rate_pct         100  < 90              12  ml-platform
-token_cost_runaway    OK       cost_per_minute_usd             0.0103  > 0.05            12  ml-platform
+token_cost_runaway    OK       cost_per_minute_usd             0.0116  > 0.05            12  ml-platform
 
 0 of 4 alerts firing
   dashboard: evidence/17-challenge-dashboard-phase-a-healthy.html
@@ -41,20 +41,20 @@ $ python scripts/inject_incident.py        # no --scenario: reads config/challen
 
 $ python scripts/load_test.py --challenge --concurrency 5
 Challenge: day13-k4-l3a-monitoring-llmops-v1 | Cohort: K4
-[200] req-e76a5eed | monitoring | 2657.5ms
-[200] req-dfe12917 | monitoring | 2660.1ms
-[200] req-693c7ad0 | monitoring | 2662.2ms
-[200] req-a7c21966 | monitoring | 2661.4ms
-[200] req-c390a17d | monitoring | 2662.2ms
+[200] req-d2dc4ed2 | monitoring | 2658.3ms
+[200] req-fa78183b | monitoring | 2659.1ms
+[200] req-804438b4 | monitoring | 2660.6ms
+[200] req-b4030b29 | monitoring | 2660.6ms
+[200] req-9137cbd3 | monitoring | 2660.4ms
 
 metrics:
-{"traffic":10,"latency_p50":2651.0,"latency_p95":2651.0,"latency_p99":2651.0,"ttft_p95":50.0,"avg_cost_usd":0.0022,"total_cost_usd":0.0221,"tokens_in_total":910,"tokens_out_total":1291,"error_breakdown":{},"quality_avg":0.84}
+{"traffic":10,"latency_p50":2651.0,"latency_p95":2651.0,"latency_p99":2651.0,"ttft_p95":50.0,"avg_cost_usd":0.0022,"total_cost_usd":0.022,"tokens_in_total":910,"tokens_out_total":1283,"error_breakdown":{},"quality_avg":0.84}
 
 alerts:
 slow_answers          FIRING   latency_p95_ms                    2651  > 1000            23  backend-oncall
 answers_failing       OK       error_rate_pct                       0  > 2               23  backend-oncall
 retrieval_quality_dropOK       retrieval_success_rate_pct         100  < 90              23  ml-platform
-token_cost_runaway    OK       cost_per_minute_usd             0.0221  > 0.05            23  ml-platform
+token_cost_runaway    OK       cost_per_minute_usd              0.022  > 0.05            23  ml-platform
 
   slow_answers -> Slack #day13-oncall (backend-oncall), runbook docs/alerts.md#alert-1
 
@@ -62,16 +62,16 @@ token_cost_runaway    OK       cost_per_minute_usd             0.0221  > 0.05   
   dashboard: evidence/17-challenge-dashboard-phase-b-incident.html
 
   affected requests (feature=monitoring):
-    req-50bced92  151ms  ttft=50ms  user=dde2e75b20cf  session=k4-l3a-challenge-s01
-    req-df36b866  150ms  ttft=50ms  user=4570299f37e2  session=k4-l3a-challenge-s04
-    req-606f7aa0  150ms  ttft=50ms  user=ed72e61117f6  session=k4-l3a-challenge-s05
-    req-d75fa7a3  150ms  ttft=50ms  user=dc9b2ec8da9d  session=k4-l3a-challenge-s03
-    req-279942ec  150ms  ttft=50ms  user=aae0b94055a9  session=k4-l3a-challenge-s02
-    req-e76a5eed  2651ms  ttft=50ms  user=aae0b94055a9  session=k4-l3a-challenge-s02
-    req-693c7ad0  2651ms  ttft=50ms  user=4570299f37e2  session=k4-l3a-challenge-s04
-    req-dfe12917  2651ms  ttft=50ms  user=dc9b2ec8da9d  session=k4-l3a-challenge-s03
-    req-a7c21966  2651ms  ttft=50ms  user=ed72e61117f6  session=k4-l3a-challenge-s05
-    req-c390a17d  2651ms  ttft=50ms  user=dde2e75b20cf  session=k4-l3a-challenge-s01
+    req-c2cd61ac  151ms  ttft=50ms  user=4570299f37e2  session=k4-l3a-challenge-s04
+    req-b8ab3316  151ms  ttft=50ms  user=dc9b2ec8da9d  session=k4-l3a-challenge-s03
+    req-3af824b5  150ms  ttft=50ms  user=aae0b94055a9  session=k4-l3a-challenge-s02
+    req-e999bb4a  150ms  ttft=50ms  user=ed72e61117f6  session=k4-l3a-challenge-s05
+    req-f335fa85  150ms  ttft=50ms  user=dde2e75b20cf  session=k4-l3a-challenge-s01
+    req-d2dc4ed2  2651ms  ttft=50ms  user=aae0b94055a9  session=k4-l3a-challenge-s02
+    req-fa78183b  2651ms  ttft=50ms  user=dc9b2ec8da9d  session=k4-l3a-challenge-s03
+    req-b4030b29  2651ms  ttft=50ms  user=dde2e75b20cf  session=k4-l3a-challenge-s01
+    req-804438b4  2651ms  ttft=50ms  user=4570299f37e2  session=k4-l3a-challenge-s04
+    req-9137cbd3  2651ms  ttft=50ms  user=ed72e61117f6  session=k4-l3a-challenge-s05
 
   retrieval success across the whole challenge traffic:
 
@@ -84,14 +84,14 @@ The threshold is the challenge's own latency_threshold_ms, not the SLO budget:
 the log deliberately contains the healthy phase too, and averaging a mixed
 window dilutes p95 below the SLO threshold.
 log file : /home/aminix/Projects/K4-L3A-Day13-NguyenHaiDang-2A202602963-Monitoring-LLMOps/data/logs.jsonl
-records  : 23  (2026-09-29T09:37:51.998453Z .. 2026-09-29T09:37:57.351845Z)
+records  : 23  (2026-09-29T10:03:35.777370Z .. 2026-09-29T10:03:41.083410Z)
 
 ==============================================================================
 STEP 1 - METRICS: what is the symptom and when does it start?
 ==============================================================================
 minute               n      p50      p95  ttft_p95      cost
 ------------------------------------------------------------
-2026-09-29T09:37    10     2651     2651        50    0.0221
+2026-09-29T10:03    10     2651     2651        50    0.0220
 
 window p50=2651 ms  p95=2651 ms  p99=2651 ms  max=2651 ms
 errors in window: 0  (none)
@@ -103,9 +103,9 @@ STEP 2 - LOGS: requests slower than 2000 ms, and their correlation_id
 ==============================================================================
 correlation_id     latency_ms  ttft_ms    tokens   session  message
 ----------------------------------------------------------------------------------------------------
-req-e76a5eed             2651       50    90/137k4-l3a-challenge-s02  
-req-693c7ad0             2651       50    92/137k4-l3a-challenge-s04  
-req-dfe12917             2651       50    91/122k4-l3a-challenge-s03  
+req-d2dc4ed2             2651       50    90/138k4-l3a-challenge-s02  
+req-fa78183b             2651       50     91/81k4-l3a-challenge-s03  
+req-b4030b29             2651       50    91/127k4-l3a-challenge-s01  
 
 5 of 10 responses exceeded 2000 ms.
 correlation_id is the only field needed for step 3: it is also the trace
@@ -115,53 +115,53 @@ metadata key, so one identifier joins the log and the trace.
 STEP 3 - TRACES: which span is responsible inside those requests?
 ==============================================================================
 
-correlation_id req-e76a5eed  ->  traceId a479d657cd3595d8766cbbde4f54fbe1
+correlation_id req-d2dc4ed2  ->  traceId 63cb006c4ed04d731d8041301531fc25
   trace      : day13-agent-request  user=aae0b94055a9 session=k4-l3a-challenge-s02  env=dev
   prompt     : day13-chat:1 (langfuse)
-  RETRIEVER  retrieve-context       2.500s  94.3% of trace  ##################
-  GENERATION generate-response      0.150s   5.7% of trace  #
-             model=claude-sonnet-4-5 ttft=0.05 usage=227 cost=0.002325
-  SPAN       resolve-prompt         0.001s   0.0% of trace  #
-  -> slowest span: retrieve-context (2.5s of 2.651s). The root cause is inside this span, not in the model call.
+  RETRIEVER  retrieve-context       2.501s  94.3% of trace  ##################
+  GENERATION generate-response      0.151s   5.7% of trace  #
+             model=claude-sonnet-4-5 ttft=0.05 usage=228 cost=0.002339999999
+  SPAN       resolve-prompt         0.000s   0.0% of trace  #
+  -> slowest span: retrieve-context (2.501s of 2.652s). The root cause is inside this span, not in the model call.
 
-correlation_id req-693c7ad0  ->  traceId 0b4710642c6e2c0c7a3939ee85f84e44
-  trace      : day13-agent-request  user=4570299f37e2 session=k4-l3a-challenge-s04  env=dev
-  prompt     : day13-chat:1 (langfuse)
-  RETRIEVER  retrieve-context       2.500s  94.3% of trace  ##################
-  GENERATION generate-response      0.150s   5.7% of trace  #
-             model=claude-sonnet-4-5 ttft=0.05 usage=229 cost=0.002330999999
-  SPAN       resolve-prompt         0.001s   0.0% of trace  #
-  -> slowest span: retrieve-context (2.5s of 2.651s). The root cause is inside this span, not in the model call.
-
-correlation_id req-dfe12917  ->  traceId 3a926f70da4c43172ed02e818f3f627f
+correlation_id req-fa78183b  ->  traceId 771c78ddbe16261efb2be47bd10fce71
   trace      : day13-agent-request  user=dc9b2ec8da9d session=k4-l3a-challenge-s03  env=dev
+  prompt     : day13-chat:1 (langfuse)
+  RETRIEVER  retrieve-context       2.501s  94.3% of trace  ##################
+  GENERATION generate-response      0.150s   5.7% of trace  #
+             model=claude-sonnet-4-5 ttft=0.05 usage=172 cost=0.001488
+  SPAN       resolve-prompt         0.000s   0.0% of trace  #
+  -> slowest span: retrieve-context (2.501s of 2.652s). The root cause is inside this span, not in the model call.
+
+correlation_id req-b4030b29  ->  traceId c2129e0270e83c15428665a4b038814f
+  trace      : day13-agent-request  user=dde2e75b20cf session=k4-l3a-challenge-s01  env=dev
   prompt     : day13-chat:1 (langfuse)
   RETRIEVER  retrieve-context       2.500s  94.3% of trace  ##################
   GENERATION generate-response      0.151s   5.7% of trace  #
-             model=claude-sonnet-4-5 ttft=0.05 usage=213 cost=0.002103
+             model=claude-sonnet-4-5 ttft=0.05 usage=218 cost=0.002178
   SPAN       resolve-prompt         0.000s   0.0% of trace  #
-  -> slowest span: retrieve-context (2.5s of 2.652s). The root cause is inside this span, not in the model call.
+  -> slowest span: retrieve-context (2.5s of 2.651s). The root cause is inside this span, not in the model call.
 
 ==========================================================================
 MITIGATION - turn the incident off, re-measure on a fresh log
 ==========================================================================
 200 {'ok': True, 'incidents': {'rag_slow': False, 'tool_fail': False, 'cost_spike': False}}
 Challenge: day13-k4-l3a-monitoring-llmops-v1 | Cohort: K4
-[200] req-8411ca6d | monitoring | 158.7ms
-[200] req-0bfdeaec | monitoring | 158.9ms
-[200] req-d9199bb6 | monitoring | 159.1ms
-[200] req-1cc7ada6 | monitoring | 159.8ms
-[200] req-7832bf8c | monitoring | 159.6ms
+[200] req-3e916491 | monitoring | 156.9ms
+[200] req-02d2548e | monitoring | 157.1ms
+[200] req-1a57ec66 | monitoring | 159.2ms
+[200] req-73bfbc76 | monitoring | 158.3ms
+[200] req-4035ef81 | monitoring | 158.9ms
 
 metrics after mitigation:
-{"traffic":5,"latency_p50":150.0,"latency_p95":151.0,"latency_p99":151.0,"ttft_p95":50.0,"avg_cost_usd":0.0019,"total_cost_usd":0.0093,"tokens_in_total":455,"tokens_out_total":531,"error_breakdown":{},"quality_avg":0.84}
+{"traffic":5,"latency_p50":150.0,"latency_p95":151.0,"latency_p99":151.0,"ttft_p95":50.0,"avg_cost_usd":0.0026,"total_cost_usd":0.0129,"tokens_in_total":455,"tokens_out_total":770,"error_breakdown":{},"quality_avg":0.84}
 
 alerts after mitigation:
 --------------------------------------------------------------------------------------------------
 slow_answers          OK       latency_p95_ms                     151  > 1000            12  backend-oncall
 answers_failing       OK       error_rate_pct                       0  > 2               12  backend-oncall
 retrieval_quality_dropOK       retrieval_success_rate_pct         100  < 90              12  ml-platform
-token_cost_runaway    OK       cost_per_minute_usd             0.0093  > 0.05            12  ml-platform
+token_cost_runaway    OK       cost_per_minute_usd             0.0129  > 0.05            12  ml-platform
 
 0 of 4 alerts firing
   dashboard: evidence/17-challenge-dashboard-phase-c-mitigated.html

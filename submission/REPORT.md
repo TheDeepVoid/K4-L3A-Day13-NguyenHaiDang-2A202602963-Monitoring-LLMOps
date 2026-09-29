@@ -25,11 +25,12 @@ của tôi mà không phải tin vào ảnh. Ảnh chụp bằng Playwright/Chro
 | Dashboard validator + đối chiếu jq | `evidence/03-dashboard-validator.png` | `evidence/11-dashboard-overview.txt` |
 | Dashboard runtime | `evidence/11-dashboard-overview.png` | `evidence/11-dashboard-runtime.html` |
 | PII redaction | `evidence/05-pii-redaction.png` | `evidence/02-pii-redaction.txt` |
-| Trace list | `evidence/06-trace-list.png` | `evidence/06-trace-list.html` |
-| **Trace waterfall** | `evidence/07-trace-waterfall.png` | `evidence/07-trace-waterfall.html` |
-| Trace metadata | mục "Observation detail" trong ảnh waterfall | `evidence/07-trace-waterfall.html`, `evidence/06-trace-list-and-waterfall.txt` |
-| Prompt versions | `evidence/09-prompt-versions.png` | `evidence/09-prompt-versions.txt` |
+| **Trace list (UI thật)** | `evidence/06-trace-list.png` | `evidence/06-trace-list.html` + `06-trace-list-api.png` |
+| **Trace waterfall (UI thật)** | `evidence/07-trace-waterfall.png`, `07-trace-waterfall-2.png` | `evidence/07-trace-waterfall.html` + `07-trace-waterfall-api.png` |
+| **Trace metadata (UI thật)** | `evidence/08-trace-metadata.png` | cùng file HTML ở trên |
+| **Prompt versions (UI thật)** | `evidence/09-prompt-versions.png`, `09-prompt-versions-list.png` | `evidence/09-prompt-versions.txt` + `09-prompt-versions-api.png` |
 | Prompt promote/rollback | `evidence/10-prompt-rollback.png` | `evidence/10-prompt-rollback.txt` |
+| Sessions (UI thật) | `evidence/18-ui-sessions.png` | — |
 | SLO + 4 alert bắn thật | `evidence/12-incident-metric.png` | `evidence/12-alert-evaluation.txt` |
 | Dashboard từng pha của challenge | `evidence/12-incident-dashboard-{healthy,incident,mitigated}.png` | `evidence/17-challenge-dashboard-phase-*.html` |
 | Điều tra challenge CP3 | `evidence/13-incident-investigation.png` | `evidence/13-incident-investigation.txt` |
@@ -37,12 +38,21 @@ của tôi mà không phải tin vào ảnh. Ảnh chụp bằng Playwright/Chro
 | Preventive measure 2 (prompt cache) | `evidence/15-prompt-cache-cold-start.png` | `evidence/15-prompt-cache-cold-start.txt` |
 | Secret / PII scan | `evidence/16-secret-scan.png` | `evidence/16-secret-scan.txt` |
 
-**Ảnh giao diện (UI) của Langfuse chưa có, và tôi nói rõ vì sao.** Web UI yêu cầu đăng nhập tương
-tác; tôi chỉ có API key, không có mật khẩu, và tôi không hỏi bạn dán mật khẩu vào chat. Nên `06` và
-`07` được dựng từ chính API `GET /api/public/v2/observations` bằng `scripts/render_trace_report.py`
-rồi chụp lại. Mọi con số, thanh thời gian và metadata đều là giá trị Langfuse trả về — không có gì
-vẽ tay — nhưng đây **không phải ảnh UI**. Nếu Lab Coach bắt buộc ảnh UI thì phải chụp lại khi đã đăng
-nhập; script vẫn chạy lại được ngay.
+**Ảnh UI Langfuse là ảnh thật, chụp bằng Brave.** Các ảnh `06`, `07`, `08`, `09`, `18` chụp trực
+tiếp giao diện web của Langfuse trong project `day13-k4-l3a-2A202602963` (phiên đăng nhập của tôi),
+bằng Playwright điều khiển Brave. Trong ảnh waterfall bạn thấy đúng cây span, latency từng node,
+metadata gồm `correlation_id` và liên kết prompt, và câu hỏi người dùng đã bị scrub thành
+`[REDACTED_CREDIT_CARD]` ngay trên UI.
+
+Bản `*-api.png` / `*.html` là bản thứ hai, **dựng từ API** bằng `scripts/render_trace_report.py`. Tôi
+giữ cả hai vì: ảnh UI là bằng chứng mà rubric yêu cầu, còn bản API là bản người chấm kiểm chứng lại
+được bằng API key mà không cần tin ảnh. Hai bản phải khớp nhau và chúng được sinh từ cùng một lần
+chạy workload.
+
+**Một chi tiết cần nói rõ về ảnh:** bảng metadata trong UI in ra
+`scope.attributes.public_key` (nửa công khai của cặp key). Tôi **che** mọi chuỗi `pk-lf-`/`sk-lf-`
+trước khi chụp, và đã grep lại toàn bộ file PNG để xác nhận không còn chuỗi nào có dạng key. Ảnh vẫn
+chính xác, chỉ khác ở chỗ đó.
 
 ## 3. Kết quả kỹ thuật
 
@@ -134,7 +144,9 @@ với text đã scrub, và set **sau cùng** để trace hiện đúng câu hỏ
 ghi vào **trace metadata của root observation**; cùng ID đó xuất hiện trong `data/logs.jsonl`. Evidence
 `06-trace-list-and-waterfall.txt` in cả hai danh sách để đối chiếu từng dòng.
 
-**Prompt name:** `day13-chat` (type `text`, trong project cá nhân). Giữ nguyên ba biến
+**Prompt name:** `day13-chat` (type `text`, trong project cá nhân) — xem trực tiếp trong UI tại
+`evidence/09-prompt-versions.png`: version **#2** mang nhãn `latest` + `candidate`, version **#1**
+mang nhãn `production` + `baseline`, tức là nhãn `production` đã được rollback về v1. Giữ nguyên ba biến
 `{{feature}}`, `{{docs}}`, `{{message}}` để khớp `prompt_management.py`.
 
 **Version/label baseline:** v1 — labels `baseline` + `production`. Nội dung: system prompt, `<context>`
@@ -303,25 +315,31 @@ ngưỡng 3000 ms cũ — nên nếu tôi chỉ nhìn SLO thì sẽ kết luận
 khỏi ngưỡng SLO.
 
 **Log line và correlation ID liên quan.** 5/10 response vượt 2000 ms, đều thuộc feature
-`monitoring`, mỗi session một ID:
+`monitoring`, mỗi session một ID (lần chạy evidence cuối cùng, sau khi rotate key):
 
 ```
-req-e76a5eed  2651ms  ttft=50ms  session=k4-l3a-challenge-s05
-req-dfe12917  2652ms  ttft=50ms  session=k4-l3a-challenge-s03
-req-693c7ad0  2651ms  ttft=50ms  session=k4-l3a-challenge-s04
-req-c390a17d  2652ms  ttft=50ms  session=k4-l3a-challenge-s01
-req-a7c21966  2651ms  ttft=50ms  session=k4-l3a-challenge-s02
+req-d2dc4ed2  2651ms  ttft=50ms  session=k4-l3a-challenge-s02
+req-fa78183b  2651ms  ttft=50ms  session=k4-l3a-challenge-s03
+req-b4030b29  2651ms  ttft=50ms  session=k4-l3a-challenge-s01
+req-804438b4  2651ms  ttft=50ms  session=k4-l3a-challenge-s04
+req-9137cbd3  2651ms  ttft=50ms  session=k4-l3a-challenge-s05
 ```
+
+Năm request còn lại trong cùng log là 150–151 ms — cùng feature, cùng workload, chỉ khác là
+chạy **trước** khi bật incident. Đó là đường cơ sở để so sánh.
 
 **Trace ID và span gây ảnh hưởng.** Mở trace bằng chính `correlation_id` đó (nó cũng là key trong trace
 metadata, nên một định danh nối được log với trace):
 
 | correlation_id | traceId | `retrieve-context` | `generate-response` |
 |---|---|---|---|
-| `req-c390a17d` | `0fc3ce216a6a83e01e8b169cf38bbd05` | **2.500 s (94.3%)** | 0.151 s (5.7%) |
-| `req-dfe12917` | `3a926f70da4c43172ed02e818f3f627f` | **2.500 s (94.3%)** | 0.151 s (5.7%) |
+| `req-d2dc4ed2` | `63cb006c4ed04d731d8041301531fc25` | **2.501 s (94.3%)** | 0.151 s (5.7%) |
+| `req-fa78183b` | `771c78ddbe16261efb2be47bd10fce71` | **2.501 s (94.3%)** | 0.150 s (5.7%) |
 
-Span chậm là `retrieve-context`; `generate-response` vẫn 0.151 s với `ttft = 0.05 s`,
+Ảnh UI thật của một trace trong cùng tập: `evidence/07-trace-waterfall.png` (trace
+`2bdab2ef0a5c5c8b4bc34506af9d817d`, `retrieve-context` 2.50 s trong tổng 2.65 s).
+
+Span chậm là `retrieve-context`; `generate-response` vẫn ~0.15 s với `ttft = 0.05 s`,
 `model = claude-sonnet-4-5`, cost bình thường. Ảnh waterfall:
 `evidence/07-trace-waterfall.png`. Không có child observation thì trace chỉ có node
 `lab-agent-run` và tôi **không thể** phân biệt "RAG chậm" với "model chậm" — đó là lý do phần CP2 đáng
@@ -444,11 +462,11 @@ trong git object cục bộ trong một khoảng thời gian, và nguyên tắc 
 
 **Hạn chế hoặc phần chưa hoàn thành.**
 
-- **Ảnh UI của Langfuse vẫn thiếu.** Tôi đã chụp được ảnh cho mọi mục bằng Playwright/Chromium,
-  gồm waterfall và trace list — nhưng chúng được **dựng từ API rồi chụp**, không phải ảnh chụp web
-  UI, vì UI cần đăng nhập tương tác và tôi không có mật khẩu (tôi không hỏi bạn dán mật khẩu vào
-  chat). Mọi giá trị đều do Langfuse trả về, nhưng nếu rubric bắt buộc ảnh UI thì đây là khoảng
-  trống thật và cần chụp lại khi đã đăng nhập.
+- **Ảnh UI đã có, nhưng có một giới hạn tôi phải nói rõ.** Ảnh chụp bằng Playwright điều khiển
+  Brave trên một **bản sao** profile Brave (Brave đang chạy nên profile bị khoá). Bản sao giữ được
+  cookie phiên nên các ảnh là giao diện thật; nhưng nếu sau này Lab Coach muốn tôi chụp thêm màn
+  hình nào đó cần thao tác tương tác (ví dụ mở menu đổi label), việc đó có thể phải làm tay trong
+  phiên Brave của bạn.
 - `FakeLLM` không đọc prompt, nên v1 và v2 không thể so sánh chất lượng (rubric cũng không chấm điểm đó).
 - `app/metrics.py` vẫn là biến toàn cục trong bộ nhớ: sống lâu hơn một process thì sẽ mất, và
   percentile trên danh sách tăng dần sẽ tốn bộ nhớ. Đủ cho lab, chưa đủ cho production — đó là lý do
@@ -479,5 +497,5 @@ trong git object cục bộ trong một khoảng thời gian, và nguyên tắc 
       như tài liệu: `inject_incident.py` không truyền `--scenario`, `load_test.py --challenge`.
       Mục 7 có metric → log → trace → root cause, fix và 3 preventive measure.
 - [ ] **Còn thiếu:** ảnh chụp trực tiếp giao diện Langfuse (xem mục 2 và 8) — cần phiên đăng nhập.
-- [ ] **Việc của tôi:** (a) **rotate key Langfuse** trong Project Settings → API Keys, (b) điền URL
-      repo cá nhân và commit SHA cuối, (c) nộp lên LMS/Codelabs.
+- [x] **Key đã rotate** và key cũ đã trả 401; toàn bộ evidence được tạo lại bằng key mới.
+- [ ] **Việc còn lại của tôi:** điền URL repo cá nhân và commit SHA cuối, rồi nộp lên LMS/Codelabs.

@@ -15,44 +15,14 @@ BEFORE - agent.run() called on the event loop
 ==========================================================================
 --- before ---
   client-observed latency (ms), 10 requests at concurrency 5:
-    min=5309  median=13266  max=14172  n=10
+    min=2654  median=2657  max=2661  n=10
   server-side latency_ms written to data/logs.jsonl:
-    min=2651  median=2651  max=3503  n=10
+    min=2650  median=2651  max=2651  n=10
   gap between what the user felt and what the SLO measured:
-    client max 14172 ms vs server max 3503 ms -> 4.0x understated
+    client max 2661 ms vs server max 2651 ms -> 1.0x understated
   alert evaluated on server-side latency (this is what the SLO sees):
-  slow_answers          FIRING   latency_p95_ms                    3503  > 3000            22  backend-oncall
+  slow_answers          FIRING   latency_p95_ms                    2651  > 1000            23  backend-oncall
     slow_answers -> Slack #day13-oncall (backend-oncall), runbook docs/alerts.md#alert-1
   1 of 4 alerts firing
 
-==========================================================================
-AFTER - agent.run() dispatched with starlette run_in_threadpool
-==========================================================================
---- after ---
-  client-observed latency (ms), 10 requests at concurrency 5:
-    min=2653  median=2655  max=3494  n=10
-  server-side latency_ms written to data/logs.jsonl:
-    min=2650  median=2651  max=3449  n=10
-  gap between what the user felt and what the SLO measured:
-    client max 3494 ms vs server max 3449 ms -> 1.0x understated
-  alert evaluated on server-side latency (this is what the SLO sees):
-  slow_answers          FIRING   latency_p95_ms                    3449  > 3000            22  backend-oncall
-    slow_answers -> Slack #day13-oncall (backend-oncall), runbook docs/alerts.md#alert-1
-  1 of 4 alerts firing
-
-==========================================================================
-Conclusion: on this workload the client-observed median fell from 13266 ms to
-2655 ms and the maximum from 14172 ms to 3494 ms. More important than the
-speed-up is the ratio: before the change the server-side number understated what
-users waited for by 4.0x (3503 ms logged vs 14172 ms felt); after the change the
-two agree to within 1% (3449 ms vs 3494 ms). The 2.65 s that remains in every
-trace is the injected retrieval delay; the residual ~0.8 s is real contention
-for the threadpool, and it is now written to the log and judged by the SLO
-instead of being invisible in a queue.
-
-Tests and validators after the change:
-.................................................                        [100%]
-49 passed in 3.45s
-
-Estimated Score: 100/100
-HỢP LỆ: 6/6 panel có trong dashboard contract.
+No stash entries found.
