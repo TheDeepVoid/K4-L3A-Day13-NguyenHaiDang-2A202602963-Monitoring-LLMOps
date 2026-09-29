@@ -1,0 +1,34 @@
+# CP2b - PROMOTION AND ROLLBACK OF THE 'production' LABEL (evidence 10)
+
+## Step 1 - promote: production -> v2
+$ python scripts/prompt_ops.py promote 2
+day13-chat version 2 labels -> ['production']
+  label resolution afterwards: production -> version 2, baseline -> version 1, candidate -> version 2
+
+## Step 2 - one request with LANGFUSE_PROMPT_LABEL=production
+  correlation_id = req-c502ba79  ->  trace 4e3574d6d360920cccbaa152f8d71140
+  root metadata : prompt_label=production  prompt_version=2  prompt_source=langfuse
+  generation    : promptName=day13-chat  promptVersion=2
+  promptId      : e3dd3dff-49dd-4993-8495-5318ad8b7c8b
+  prompt text   : ends with 'Keep the answer under 80 words.'  (the v2 change)
+
+## Step 3 - rollback: production -> v1
+$ python scripts/prompt_ops.py rollback
+day13-chat version 1 labels -> ['baseline', 'production']
+  label resolution afterwards: production -> version 1, baseline -> version 1, candidate -> version 2
+
+## Step 4 - same request again after the rollback
+  correlation_id = req-33fe38ba  ->  trace 195a35be78eb67cbe987be8ade232d39
+  root metadata : prompt_label=production  prompt_version=1  prompt_source=langfuse
+  generation    : promptName=day13-chat  promptVersion=1
+  promptId      : fa797682-3cea-401f-9c55-b62a3ccfbd32
+  prompt text   : no 'Keep the answer under 80 words.' line - v1 is served again.
+
+## Why there is no quality comparison between v1 and v2
+  The lab's FakeLLM (app/mock_llm.py) returns a fixed canned string and never
+  reads the prompt, so v1 and v2 cannot differ in output quality. Per the lab
+  rubric the graded point is that the version is retrievable, relabelled and
+  rolled back with evidence - not which prompt is 'better'.
+
+## Raw label state right now (GET /api/public/v2/prompts)
+{"name":"day13-chat","type":"text","versions":[1,2],"labels":["baseline","candidate","latest","production"]}

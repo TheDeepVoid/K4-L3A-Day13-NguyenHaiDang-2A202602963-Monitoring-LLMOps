@@ -1,0 +1,115 @@
+# CP2b - PROMPT VERSIONS (evidence 09)
+# project: day13-k4-l3a-2A202602963   prompt name: day13-chat   type: text
+# Reproduce with: python scripts/prompt_ops.py create-v1 | create-v2 | show
+# The same request was sent twice, changing only LANGFUSE_PROMPT_LABEL:
+#   baseline   -> trace 8fb0a16f8f4876d5bcbf72229fcb2e1e (v1)
+#   candidate  -> trace 4bd7543129b270201c939f88c41d57d6 (v2)
+
+Prompt 'day13-chat-version:3' not found during refresh, evicting from cache.
+==============================================================================
+1) PROMPT VERSIONS AND LABELS  (GET /api/public/v2/prompts?name=day13-chat)
+==============================================================================
+  prompt day13-chat  type=text  versions=[1, 2]
+  labels currently on this prompt: ['baseline', 'candidate', 'latest', 'production']
+
+  per version (SDK get_prompt(name, version=N)):
+  --- version 1  labels=['baseline', 'production'] ---
+    | You are the Day 13 lab assistant answering questions for the {{feature}} feature.
+    | 
+    | <context>
+    | {{docs}}
+    | </context>
+    | 
+    | <question>
+    | {{message}}
+    | </question>
+    | 
+    | Answer the question using only the context above. If the context does not
+    | contain the answer, say so plainly instead of guessing.
+  --- version 2  labels=['candidate', 'latest'] ---
+    | You are the Day 13 lab assistant answering questions for the {{feature}} feature.
+    | 
+    | <context>
+    | {{docs}}
+    | </context>
+    | 
+    | <question>
+    | {{message}}
+    | </question>
+    | 
+    | Answer the question using only the context above. If the context does not
+    | contain the answer, say so plainly instead of guessing.
+    | 
+    | Keep the answer under 80 words.
+
+  label -> version resolution (SDK get_prompt(name, label=L)):
+    production   -> version 1
+    baseline     -> version 1
+    candidate    -> version 2
+    latest       -> version 2
+==============================================================================
+2) TRACES PER LABEL  (Observations API v2, root observation metadata)
+==============================================================================
+correlation_id  label       version  source          promptName  promptId                              traceId
+req-194fe8ea    baseline    1        langfuse        day13-chat  fa797682-3cea-401f-9c55-b62a3ccfbd32  8fb0a16f8f4876d5bcbf72229fcb2e1e
+req-2a4246fa    candidate   2        langfuse        day13-chat  e3dd3dff-49dd-4993-8495-5318ad8b7c8b  4bd7543129b270201c939f88c41d57d6
+req-c502ba79    production  2        langfuse        day13-chat  e3dd3dff-49dd-4993-8495-5318ad8b7c8b  4e3574d6d360920cccbaa152f8d71140
+req-33fe38ba    production  1        langfuse        day13-chat  fa797682-3cea-401f-9c55-b62a3ccfbd32  195a35be78eb67cbe987be8ade232d39
+
+3) THE PROMPT TEXT SENT TO THE MODEL, PER TRACE (generation input)
+  --- corr=req-194fe8ea label=baseline v1 trace=8fb0a16f8f4876d5bcbf72229fcb2e1e ---
+    | You are the Day 13 lab assistant answering questions for the qa feature.
+    | 
+    | <context>
+    | Refunds are available within 7 days with proof of purchase.
+    | </context>
+    | 
+    | <question>
+    | What is your refund policy?
+    | </question>
+    | 
+    | Answer the question using only the context above. If the context does not
+    | contain the answer, say so plainly instead of guessing.
+  --- corr=req-2a4246fa label=candidate v2 trace=4bd7543129b270201c939f88c41d57d6 ---
+    | You are the Day 13 lab assistant answering questions for the qa feature.
+    | 
+    | <context>
+    | Refunds are available within 7 days with proof of purchase.
+    | </context>
+    | 
+    | <question>
+    | What is your refund policy?
+    | </question>
+    | 
+    | Answer the question using only the context above. If the context does not
+    | contain the answer, say so plainly instead of guessing.
+    | 
+    | Keep the answer under 80 words.
+  --- corr=req-c502ba79 label=production v2 trace=4e3574d6d360920cccbaa152f8d71140 ---
+    | You are the Day 13 lab assistant answering questions for the qa feature.
+    | 
+    | <context>
+    | Refunds are available within 7 days with proof of purchase.
+    | </context>
+    | 
+    | <question>
+    | What is your refund policy?
+    | </question>
+    | 
+    | Answer the question using only the context above. If the context does not
+    | contain the answer, say so plainly instead of guessing.
+    | 
+    | Keep the answer under 80 words.
+  --- corr=req-33fe38ba label=production v1 trace=195a35be78eb67cbe987be8ade232d39 ---
+    | You are the Day 13 lab assistant answering questions for the qa feature.
+    | 
+    | <context>
+    | Refunds are available within 7 days with proof of purchase.
+    | </context>
+    | 
+    | <question>
+    | What is your refund policy?
+    | </question>
+    | 
+    | Answer the question using only the context above. If the context does not
+    | contain the answer, say so plainly instead of guessing.

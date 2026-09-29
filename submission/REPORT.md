@@ -4,9 +4,9 @@
 
 ## 1. Thông tin học viên
 
-- **Họ và tên:** Nguyen Hai Dang
+- **Họ và tên:** Nguyễn Hải Đăng
 - **MSSV:** 2A202602963
-- **Lớp:** K4-L3A
+- **Lớp:** L3A
 - **Repository URL:** _(điền URL repo cá nhân khi push)_
 - **Commit SHA cuối:** _(ghi lại sau CP4)_
 - **Challenge ID:** _(điền sau CP3)_
@@ -89,14 +89,82 @@ validator 100/100 với detector regex **độc lập** của chính validator. 
 
 ## 5. Tracing và prompt versioning
 
-- **Cách xác nhận traces do chính tôi tạo trong project cá nhân:**
-- **Cấu trúc root/retrieval/generation observations:**
-- **Cách nối trace với log:**
-- **Prompt name:**
-- **Version/label baseline:**
-- **Version/label candidate:**
-- **Trace ID của mỗi version:**
-- **Cách promote và rollback `production`:**
+**Cách xác nhận traces do chính tôi tạo trong project cá nhân.** Toàn bộ evidence lấy từ project
+`day13-k4-l3a-2A202602963` bằng API key trong `.env` của tôi, đọc qua `GET /api/public/v2/observations`
+(v1 `/api/public/traces` bị từ chối với org tạo sau 16/09/2026:
+`LEGACY_API_UNAVAILABLE_FOR_NEW_ORGANIZATION`). Mỗi trace mang `userId` đã hash và `sessionId` riêng;
+không trace nào lấy từ project dùng chung.
+
+**Cấu trúc root/retrieval/generation.** Mỗi request = 1 trace, cây 3 node là anh em dưới cùng root:
+
+```
+day13-agent-request  (trace)  userId=<sha256[:12]>, sessionId, env=dev, tags=[lab, feature, model]
+└── lab-agent-run            type=AGENT      input/output = câu hỏi + câu trả lời (đã scrub)
+    ├── retrieve-context     type=RETRIEVER  input=query, output=documents, doc_count
+    └── generate-response    type=GENERATION model, max_tokens, usage, cost, prompt link, TTFT
+```
+
+`retrieve-context` dùng type `retriever` (không phải `span` chung chung) để phân tích RAG và Agent
+Graph hoạt động, và để tách được "RAG chậm" khỏi "model chậm" — đúng thứ CP3 cần.
+`generate-response` mang `model`, `model_parameters`, `usage_details`, `cost_details` và liên kết tới
+đúng prompt version; `completion_start_time` được set nên `timeToFirstToken` có giá trị thật (0.05s,
+khớp `time.sleep(0.05)` trong `FakeLLM`). Cost được **ingest** (`cost_details`) nên con số trong trace
+bằng đúng con số trong log và trên panel cost, thay vì để Langfuse tự suy luận giá.
+
+Một lỗi thật đã bắt được khi làm: lần đầu `completion_start_time` lấy từ `time.perf_counter()` — đó là
+monotonic counter, không phải Unix timestamp — khiến `timeToFirstToken = -1790668033`. Đã sửa sang
+`datetime.now(timezone.utc)`.
+
+Root observation giữ `capture_input=False, capture_output=False`: nếu bật, decorator sẽ gửi **toàn bộ
+tham số hàm** (gồm `user_id` và `message` thô) lên Langfuse. Trace input/output được set tường minh
+với text đã scrub, và set **sau cùng** để trace hiện đúng câu hỏi + câu trả lời.
+
+**Cách nối trace với log.** `correlation_id` sinh ở middleware được truyền vào `LabAgent.run(...)` và
+ghi vào **trace metadata của root observation**; cùng ID đó xuất hiện trong `data/logs.jsonl`. Evidence
+`06-trace-list-and-waterfall.txt` in cả hai danh sách để đối chiếu từng dòng.
+
+**Prompt name:** `day13-chat` (type `text`, trong project cá nhân). Giữ nguyên ba biến
+`{{feature}}`, `{{docs}}`, `{{message}}` để khớp `prompt_management.py`.
+
+**Version/label baseline:** v1 — labels `baseline` + `production`. Nội dung: system prompt, `<context>`
+chứa docs, `<question>` chứa message, và câu lệnh "chỉ trả lời dựa trên context, không có thì nói thẳng
+là không biết".
+
+**Version/label candidate:** v2 — labels `candidate`. Khác v1 **đúng một câu**: thêm
+`Keep the answer under 80 words.` (thay đổi nhỏ nhất có thể test được — mỗi lần chỉ đổi một nguyên nhân).
+
+**Trace ID của mỗi version:**
+
+| Label | Version | correlation_id | traceId | promptId |
+|---|---|---|---|---|
+| `baseline` | 1 | `req-194fe8ea` | `8fb0a16f8f4876d5bcbf72229fcb2e1e` | `fa797682-3cea-401f-9c55-b62a3ccfbd32` |
+| `candidate` | 2 | `req-2a4246fa` | `4bd7543129b270201c939f88c41d57d6` | `e3dd3dff-49dd-4993-8495-5318ad8b7c8b` |
+| `production` (sau promote) | 2 | `req-c502ba79` | `4e3574d6d360920cccbaa152f8d71140` | `e3dd3dff-...` |
+| `production` (sau rollback) | 1 | `req-33fe38ba` | `195a35be78eb67cbe987be8ade232d39` | `fa797682-...` |
+
+**Cách promote và rollback `production`.** Không làm thủ công bằng click mà bằng script chạy lại được —
+`scripts/prompt_ops.py` (`create-v1`, `create-v2`, `promote 2`, `rollback`, `show`), dùng
+`create_prompt(labels=...)` và `update_prompt(new_labels=...)`. Chuỗi lệnh thật đã chạy:
+
+```bash
+python scripts/prompt_ops.py create-v1     # v1, labels baseline+production
+python scripts/prompt_ops.py create-v2     # v2, label candidate
+# LANGFUSE_PROMPT_LABEL=baseline  -> restart API -> 1 request -> trace 8fb0a16f... (v1)
+# LANGFUSE_PROMPT_LABEL=candidate -> restart API -> 1 request -> trace 4bd75431... (v2)
+python scripts/prompt_ops.py promote 2     # production -> v2
+# 1 request -> trace 4e3574d6... phục vụ v2 (prompt có dòng "Keep the answer under 80 words.")
+python scripts/prompt_ops.py rollback      # production -> v1
+# 1 request -> trace 195a35be... phục vụ lại v1 (không còn dòng đó)
+```
+
+Điểm quan trọng: khi Langfuse không trả được prompt, `prompt_management.py` ghi
+`prompt_source=local-fallback` và `version=local-v1` thay vì bịa version. Evidence CP0 cho thấy
+baseline đúng là `local-v1`; sau khi tạo prompt, cùng code đó trả `source=langfuse` với version thật.
+
+**Lưu ý trung thực về v1 vs v2.** `FakeLLM` trong `app/mock_llm.py` trả về một câu trả lời cố định và
+**không đọc prompt**, nên v1 và v2 không thể khác nhau về chất lượng đầu ra. Rubric cũng ghi rõ điểm
+được chấm là *khả năng truy xuất version, đổi label và rollback có bằng chứng*, không phải prompt nào
+"hay hơn". Tôi ghi rõ điều này thay vì dựng ra một so sánh chất lượng giả.
 
 ## 6. Dashboard, SLO và alerts
 
