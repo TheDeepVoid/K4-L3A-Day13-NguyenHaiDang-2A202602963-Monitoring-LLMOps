@@ -3,13 +3,18 @@ from __future__ import annotations
 import os
 import time
 from dataclasses import dataclass
+from datetime import datetime, timedelta, timezone
 
 from . import metrics
 from .mock_llm import FakeLLM
 from .mock_rag import retrieve
-from .pii import hash_user_id, summarize_text
+from .pii import hash_user_id, scrub_text, summarize_text
 from .prompt_management import resolve_prompt
 from .tracing import get_langfuse_client, observe, propagate_attributes, tracing_enabled
+
+# Input price / output price in USD per 1M tokens for the model this lab mocks.
+INPUT_PRICE_PER_MTOK = 3.0
+OUTPUT_PRICE_PER_MTOK = 15.0
 
 
 @dataclass
@@ -37,6 +42,10 @@ class LabAgent:
         message: str,
         correlation_id: str,
     ) -> AgentResult:
+        # capture_input/capture_output are off on the root observation because the
+        # decorator would otherwise ship every argument - including the raw
+        # user_id and message - to Langfuse. Trace input/output are set
+        # explicitly below instead, with PII already scrubbed.
         langfuse_client = get_langfuse_client()
         with propagate_attributes(
             user_id=hash_user_id(user_id),
@@ -51,7 +60,21 @@ class LabAgent:
             },
         ):
             started = time.perf_counter()
-            docs = retrieve(message)
+
+            # Child 1: retrieval. Typed `retriever` rather than a generic `span`
+            # so RAG-specific analytics and Agent Graph nodes work, and so a slow
+            # vector store is separable from a slow model call.
+            with langfuse_client.start_as_current_observation(
+                as_type="retriever",
+                name="retrieve-context",
+                input={"query": scrub_text(message)},
+            ) as retrieval:
+                docs = retrieve(message)
+                retrieval.update(
+                    output={"documents": [scrub_text(doc) for doc in docs]},
+                    metadata={"doc_count": len(docs), "corpus": "mock_rag"},
+                )
+
             prompt = resolve_prompt(
                 langfuse_client,
                 feature=feature,
@@ -59,7 +82,82 @@ class LabAgent:
                 message=message,
                 enabled=tracing_enabled(),
             )
+
+            # Child 2: the model call, as a sibling of retrieval. Passing
+            # `prompt` links this generation to the exact prompt version used,
+            # so prompt changes can be compared across traces.
+            with propagate_attributes(prompt=prompt.managed_prompt):
+                # Wall-clock, not time.perf_counter(): completion_start_time is
+                # an absolute timestamp, and perf_counter is a monotonic counter
+                # that would produce a wildly negative time-to-first-token.
+                llm_started_at = datetime.now(timezone.utc)
+                with langfuse_client.start_as_current_observation(
+                    as_type="generation",
+                    name="generate-response",
+                    model=self.model,
+                    prompt=prompt.managed_prompt,
+                    input=[
+                        {
+                            "role": "user",
+                            "content": scrub_text(prompt.text),
+                        }
+                    ],
+                    model_parameters={"max_tokens": 1024},
+                ) as generation:
+                    response = self.llm.generate(prompt.text)
+                    cost_breakdown = self._cost_breakdown(
+                        response.usage.input_tokens, response.usage.output_tokens
+                    )
+                    # The fake model sleeps 50ms before "streaming" starts;
+                    # recording that as completion_start_time is what populates
+                    # time-to-first-token on the generation.
+                    completion_start_time = llm_started_at + timedelta(
+                        milliseconds=response.ttft_ms
+                    )
+                    generation.update(
+                        output=[
+                            {
+                                "role": "assistant",
+                                "content": scrub_text(response.text),
+                            }
+                        ],
+                        usage_details={
+                            "input": response.usage.input_tokens,
+                            "output": response.usage.output_tokens,
+                        },
+                        # Ingested cost takes priority over Langfuse's inferred
+                        # price, so the number in the trace always matches the
+                        # number in the logs and on the cost dashboard panel.
+                        cost_details=cost_breakdown,
+                        completion_start_time=completion_start_time,
+                        metadata={
+                            "ttft_ms": response.ttft_ms,
+                            "prompt_source": prompt.source,
+                        },
+                    )
+
+            quality_score = self._heuristic_quality(message, response.text, docs)
+            latency_ms = int((time.perf_counter() - started) * 1000)
+            cost_usd = self._estimate_cost(
+                response.usage.input_tokens, response.usage.output_tokens
+            )
+
+            # Root observation update last, so trace-level input/output (which
+            # Langfuse derives from the root observation) is the user question
+            # and the final answer - what a reviewer needs at a glance.
             langfuse_client.update_current_span(
+                input=[
+                    {
+                        "role": "user",
+                        "content": scrub_text(message),
+                    }
+                ],
+                output=[
+                    {
+                        "role": "assistant",
+                        "content": scrub_text(response.text),
+                    }
+                ],
                 metadata={
                     "doc_count": len(docs),
                     "query_preview": summarize_text(message),
@@ -71,13 +169,6 @@ class LabAgent:
                 },
                 version=prompt.version,
             )
-            # TODO (CP2): instrument retrieve() and FakeLLM.generate() as child
-            # observations. The nested generation must receive prompt, usage and cost.
-            with propagate_attributes(prompt=prompt.managed_prompt):
-                response = self.llm.generate(prompt.text)
-            quality_score = self._heuristic_quality(message, response.text, docs)
-            latency_ms = int((time.perf_counter() - started) * 1000)
-            cost_usd = self._estimate_cost(response.usage.input_tokens, response.usage.output_tokens)
 
         metrics.record_request(
             latency_ms=latency_ms,
@@ -98,10 +189,14 @@ class LabAgent:
             quality_score=quality_score,
         )
 
+    def _cost_breakdown(self, tokens_in: int, tokens_out: int) -> dict[str, float]:
+        return {
+            "input": (tokens_in / 1_000_000) * INPUT_PRICE_PER_MTOK,
+            "output": (tokens_out / 1_000_000) * OUTPUT_PRICE_PER_MTOK,
+        }
+
     def _estimate_cost(self, tokens_in: int, tokens_out: int) -> float:
-        input_cost = (tokens_in / 1_000_000) * 3
-        output_cost = (tokens_out / 1_000_000) * 15
-        return round(input_cost + output_cost, 6)
+        return round(sum(self._cost_breakdown(tokens_in, tokens_out).values()), 6)
 
     def _heuristic_quality(self, question: str, answer: str, docs: list[str]) -> float:
         score = 0.5

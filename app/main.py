@@ -14,7 +14,7 @@ from .metrics import record_error, snapshot
 from .middleware import CorrelationIdMiddleware
 from .pii import hash_user_id, summarize_text
 from .schemas import ChatRequest, ChatResponse
-from .tracing import tracing_enabled
+from .tracing import get_langfuse_client, tracing_enabled
 
 configure_logging()
 log = get_logger()
@@ -30,6 +30,12 @@ async def lifespan(_: FastAPI):
         payload={"tracing_enabled": tracing_enabled()},
     )
     yield
+    # The Langfuse SDK buffers observations in background threads. Without an
+    # explicit flush on shutdown the last in-flight traces are lost, which is
+    # exactly the request you were investigating when you restarted the service.
+    if tracing_enabled():
+        get_langfuse_client().flush()
+        log.info("tracing_flushed", service="control", payload={"client": "langfuse"})
 
 
 app = FastAPI(title="Day 13 Monitoring & LLMOps Lab", lifespan=lifespan)

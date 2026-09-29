@@ -1,0 +1,115 @@
+# CP2a - Langfuse trace evidence
+# project : day13-k4-l3a-2A202602963   (Langfuse Cloud 4.46.0, Python SDK 4.15.6)
+# source  : GET /api/public/v2/observations   (v1 /traces is legacy-unavailable for new orgs)
+# workload: python scripts/load_test.py  ->  10 requests
+
+window: 2026-09-29T08:27:54.000Z .. 2026-09-29T08:28:16.000Z
+observations: 30   traces: 10   traces with a generation child: 10
+
+==============================================================================
+1) FULL TRACE (every observation of the newest complete trace)
+==============================================================================
+
+AGENT      lab-agent-run   (latency 0.391s)
+  id=bbf350502c75e145 parent=ROOT traceId=242f2f4ff636da10747ba4db7b7cbad0
+  traceName = day13-agent-request
+  userId = 105a9cef3903
+  sessionId = s10
+  environment = dev
+  version = local-v1
+  tags = ['lab', 'qa', 'claude-sonnet-4-5']
+  level = DEFAULT
+  inputUsage = 0
+  outputUsage = 0
+  totalUsage = 0
+  input = [{"role": "user", "content": "How should alerts be designed?"}]
+  output = [{"role": "assistant", "content": "Starter answer. You should improve this output logic and add better quality checks. Use retrieved context and keep responses concise."}]
+  metadata = {"correlation_id": "req-4e23ccf9", "model": "claude-sonnet-4-5", "feature": "qa", "prompt_fetch_error": "LangfuseFallback", "prompt_source": "local-fallback", "prompt_version": "local-v1", "prompt_label": "production", "prompt_name": "day13-chat", "query_preview": "How should alerts be designed?", "doc_count": 1}
+
+RETRIEVER  retrieve-context   (latency 0s)
+  id=bb1d413af7ef1599 parent=bbf350502c75e145 traceId=242f2f4ff636da10747ba4db7b7cbad0
+  traceName = day13-agent-request
+  userId = 105a9cef3903
+  sessionId = s10
+  environment = dev
+  tags = ['lab', 'qa', 'claude-sonnet-4-5']
+  level = DEFAULT
+  inputUsage = 0
+  outputUsage = 0
+  totalUsage = 0
+  input = {"query": "How should alerts be designed?"}
+  output = {"documents": ["No domain document matched. Use general fallback answer."]}
+  metadata = {"correlation_id": "req-4e23ccf9", "model": "claude-sonnet-4-5", "feature": "qa", "corpus": "mock_rag", "doc_count": 1}
+
+GENERATION generate-response   (latency 0.151s)
+  id=47431a20df024343 parent=bbf350502c75e145 traceId=242f2f4ff636da10747ba4db7b7cbad0
+  traceName = day13-agent-request
+  userId = 105a9cef3903
+  sessionId = s10
+  environment = dev
+  tags = ['lab', 'qa', 'claude-sonnet-4-5']
+  level = DEFAULT
+  model = claude-sonnet-4-5
+  modelParameters = {'max_tokens': 1024}
+  inputUsage = 28
+  outputUsage = 135
+  totalUsage = 163
+  inputCost = 8.4e-05
+  outputCost = 0.002025
+  totalCost = 0.002108999999
+  timeToFirstToken = 0.05
+  completionStartTime = 2026-09-29T08:28:00.948Z
+  input = [{"role": "user", "content": "Feature=qa\nDocs=No domain document matched. Use general fallback answer.\nQuestion=How should alerts be designed?"}]
+  output = [{"role": "assistant", "content": "Starter answer. You should improve this output logic and add better quality checks. Use retrieved context and keep responses concise."}]
+  usageDetails = {"input": 28, "output": 135, "total": 163}
+  costDetails = {"input": 8.4e-05, "output": 0.002025, "total": 0.002108999999}
+  metadata = {"correlation_id": "req-4e23ccf9", "model": "claude-sonnet-4-5", "feature": "qa", "prompt_source": "local-fallback", "ttft_ms": 50}
+
+==============================================================================
+2) TREE SUMMARY - every trace created by the workload
+==============================================================================
+traceId                           root            children
+89b24588ca0731008ea7440e8576495d  lab-agent-run   generation generate-response (0.151s) + retriever retrieve-context (0s)
+87564dfa42a62ebdce20af1c57d590bd  lab-agent-run   generation generate-response (0.15s) + retriever retrieve-context (0.001s)
+0c4f92cb7a6d05a5c10bd3868db09130  lab-agent-run   generation generate-response (0.151s) + retriever retrieve-context (0s)
+51d329895fbcc123ef3a1e0082f5b649  lab-agent-run   generation generate-response (0.151s) + retriever retrieve-context (0s)
+40cf206157a168641ed99cb5200b1ce4  lab-agent-run   generation generate-response (0.151s) + retriever retrieve-context (0s)
+377acc7f5df45ea2b338bfa1ca938193  lab-agent-run   generation generate-response (0.151s) + retriever retrieve-context (0s)
+259b90f570d4fae8a5c8f2da098b6b45  lab-agent-run   generation generate-response (0.15s) + retriever retrieve-context (0s)
+d66a5a25dc1ef1aab4a70c08aabf2584  lab-agent-run   generation generate-response (0.151s) + retriever retrieve-context (0.001s)
+5038df75ea42103d7500bfc723c43fa4  lab-agent-run   generation generate-response (0.15s) + retriever retrieve-context (0.001s)
+242f2f4ff636da10747ba4db7b7cbad0  lab-agent-run   generation generate-response (0.151s) + retriever retrieve-context (0s)
+
+generation aggregates over 10 generations:
+  models            : ['claude-sonnet-4-5']
+  timeToFirstToken  : [0.05]
+  total usage       : 1595 tokens
+  total cost (USD)  : 0.019869
+  promptName        : ['']
+  promptVersion     : ['None']
+
+correlation_id in root metadata (the join key between log and trace):
+  trace=89b24588ca0731008ea7440e8576495d userId=2055254ee30a session=s01 correlation_id=req-1566ea96 prompt=day13-chat:local-v1 (local-fallback)
+  trace=87564dfa42a62ebdce20af1c57d590bd userId=95b6504a8bd6 session=s02 correlation_id=req-7788c5c4 prompt=day13-chat:local-v1 (local-fallback)
+  trace=0c4f92cb7a6d05a5c10bd3868db09130 userId=97ce842ec69d session=s03 correlation_id=req-634d8bd4 prompt=day13-chat:local-v1 (local-fallback)
+  trace=51d329895fbcc123ef3a1e0082f5b649 userId=75af07890985 session=s04 correlation_id=req-4375b777 prompt=day13-chat:local-v1 (local-fallback)
+  trace=40cf206157a168641ed99cb5200b1ce4 userId=64f6ec689229 session=s05 correlation_id=req-a03e1748 prompt=day13-chat:local-v1 (local-fallback)
+  trace=377acc7f5df45ea2b338bfa1ca938193 userId=4c4f62330d76 session=s06 correlation_id=req-09abaca3 prompt=day13-chat:local-v1 (local-fallback)
+  trace=259b90f570d4fae8a5c8f2da098b6b45 userId=1632c29ecdec session=s07 correlation_id=req-d8226ac5 prompt=day13-chat:local-v1 (local-fallback)
+  trace=d66a5a25dc1ef1aab4a70c08aabf2584 userId=2f015d970c0b session=s08 correlation_id=req-a4eb4f8e prompt=day13-chat:local-v1 (local-fallback)
+  trace=5038df75ea42103d7500bfc723c43fa4 userId=4d14d5d4f719 session=s09 correlation_id=req-f7d18b36 prompt=day13-chat:local-v1 (local-fallback)
+  trace=242f2f4ff636da10747ba4db7b7cbad0 userId=105a9cef3903 session=s10 correlation_id=req-4e23ccf9 prompt=day13-chat:local-v1 (local-fallback)
+
+======================================================================
+3) THE SAME REQUESTS IN data/logs.jsonl - correlation_id is the join key
+======================================================================
+  2026-09-29T08:27:57.441023Z  req-1566ea96  latency=938ms ttft=50ms tokens=36/141 cost=0.002223
+  2026-09-29T08:27:57.841194Z  req-7788c5c4  latency=396ms ttft=50ms tokens=32/175 cost=0.002721
+  2026-09-29T08:27:58.237508Z  req-634d8bd4  latency=392ms ttft=50ms tokens=43/129 cost=0.002064
+  2026-09-29T08:27:58.628577Z  req-4375b777  latency=388ms ttft=50ms tokens=39/118 cost=0.001887
+  2026-09-29T08:27:59.021709Z  req-a03e1748  latency=390ms ttft=50ms tokens=33/88 cost=0.001419
+  2026-09-29T08:27:59.417588Z  req-09abaca3  latency=393ms ttft=50ms tokens=35/104 cost=0.001665
+  2026-09-29T08:27:59.865090Z  req-d8226ac5  latency=444ms ttft=50ms tokens=29/124 cost=0.001947
+  2026-09-29T08:28:00.260645Z  req-a4eb4f8e  latency=392ms ttft=50ms tokens=27/136 cost=0.002121
+  2026-09-29T08:28:00.656181Z  req-f7d18b36  latency=392ms ttft=50ms tokens=36/107 cost=0.001713
+  2026-09-29T08:28:01.049833Z  req-4e23ccf9  latency=390ms ttft=50ms tokens=28/135 cost=0.002109
