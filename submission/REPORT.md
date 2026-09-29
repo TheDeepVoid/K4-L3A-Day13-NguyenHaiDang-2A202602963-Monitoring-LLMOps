@@ -8,10 +8,14 @@
 - **MSSV:** 2A202602963
 - **Lớp:** L3A
 - **Repository URL:** <https://github.com/TheDeepVoid/K4-L3A-Day13-NguyenHaiDang-2A202602963-Monitoring-LLMOps>
-- **Commit SHA cuối:** `a8f5aed27ec10865dfa7c774595e7df5ade2edc7` — commit chứa toàn bộ bài nộp. Xem mục 9 về commit
-  ghi lại chính con số này.
+- **Commit SHA cuối:** `bf7a1e1a840b66c303000d2f84f03cc8d1c61360`
 - **Challenge ID:** `day13-k4-l3a-monitoring-llmops-v1`
 - **Tên project Langfuse cá nhân:** `day13-k4-l3a-2A202602963`
+
+> **Hai dòng trên là hai thứ duy nhất nộp lên VLearn LMS/Codelabs** (`docs/SUBMISSION.md` §2). SHA ở đây là
+> **tip của nhánh `main` sau khi push**, kiểm lại bằng `git rev-parse HEAD` sau mỗi lần commit — vì
+> bất kỳ commit nào thêm sau đó cũng làm nó đổi. Mục 9 giải thích vì sao báo cáo này không thể chứa
+> SHA của chính nó.
 
 ## 2. Evidence index
 
@@ -478,10 +482,39 @@ trong git object cục bộ trong một khoảng thời gian, và nguyên tắc 
 
 ## 9. Checklist trước khi nộp
 
-> **Về `Commit SHA cuối` ở mục 1:** một file không thể chứa SHA của chính commit chứa nó — mọi
-> thay đổi sau khi chèn số đó đều làm SHA đổi. Nên mục 1 ghi SHA của commit chứa toàn bộ bài
-> nộp, còn commit ghi lại chính dòng số đó là commit con ngay sau đó. Khi nộp, dùng
-> `git rev-parse HEAD` của nhánh đã push.
+### Vì sao báo cáo này không chứa được SHA của chính nó
+
+`docs/SUBMISSION.md` §2 yêu cầu nộp "commit SHA cuối", và nói rõ SHA đó phải **tồn tại trên remote**
+và chứa đầy đủ source, config, `submission/REPORT.md` và evidence.
+
+Có một vòng lặp không tự thoát được: `REPORT.md` là một trong những file mà SHA đó phải chứa. Ngay
+khoảnh khắc tôi ghi con số vào báo cáo thì commit đó đã đổi nội dung, nên SHA của nó khác con số vừa
+ghi. Không có cách nào để một file chứa chính SHA của commit mang nó — đây không phải hạn chế riêng
+của Git, mà là hàm băm của nội dung.
+
+Cách tôi xử lý, và lý do không có gì bị bỏ sót:
+
+- **Con số ở mục 1 là tip của nhánh `main` ngay sau lần push cuối.** Tôi push trước, lấy
+  `git rev-parse HEAD`, ghi con số đó vào mục 1, rồi commit lần nữa. Vì vậy con số trong báo cáo trỏ
+  tới một commit **thật, đã có trên remote, và chứa toàn bộ source + config + evidence**. Nó không
+  trỏ tới một commit "rỗng".
+- **Commit ghi lại chính dòng số đó không làm thay đổi bài.** Nó chỉ sửa văn bản ở mục 1 và mục 9. Không
+  code, test hay evidence nào thay đổi, nên chấm theo SHA của commit cha hay của commit con cho kết
+  quả giống hệt nhau.
+- **Còn một lệch nhỏ không thể tránh:** commit cuối cùng trên remote có SHA khác con số ghi ở mục 1,
+  đúng một bước. `docs/SUBMISSION.md` nói "các thay đổi sau deadline không được dùng để chấm", nên nếu
+  tôi còn commit gì sau khi nộp thì phải cập nhật lại con số. Tôi dừng commit ngay sau bước này.
+- **Cách tự kiểm chứng trước khi nộp:** in cả hai giá trị rồi so với dòng `Commit SHA cuối` ở mục 1:
+
+  ```bash
+  git rev-parse origin/main                          # tip của nhánh đã push
+  git log -1 --format=%H origin/main -- submission/REPORT.md   # commit cuối chạm vào báo cáo
+  ```
+
+  Giá trị của lệnh thứ hai chính là con số tôi ghi ở mục 1.
+
+Nếu Lab Coach đòi SHA của **chính commit đã sửa báo cáo** (tức lệnh thứ hai), thì dùng SHA mới nhất
+của `origin/main`. Hai giá trị lệch nhau đúng một khối văn bản và không ảnh hưởng kết quả chấm.
 
 - [x] Kết quả và evidence thuộc commit SHA cuối — mỗi checkpoint là một commit riêng
       (`git log --oneline`), evidence commit kèm.
