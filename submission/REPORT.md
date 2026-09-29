@@ -243,15 +243,78 @@ cost_spike}.html`) để so sánh trực quan.
 
 ## 7. Điều tra challenge
 
-- **Challenge ID:**
-- **Khoảng thời gian điều tra:**
-- **Triệu chứng từ metrics:**
-- **Log line và correlation ID liên quan:**
-- **Trace ID và span gây ảnh hưởng:**
-- **Root cause:**
-- **Fix action:**
-- **Preventive measure:**
+**Challenge ID:** **không có — đây là practice, không phải challenge chính thức.**
+`config/challenge.json` do Lab Coach phát riêng cho từng lớp và đã bị `.gitignore`; repo này không có
+file đó và `scripts/inject_incident.py` sẽ báo lỗi nếu thiếu. Theo `docs/CHECKPOINTS.md` CP3 và
+`README.md`, khi chưa có file được phát thì tiếp tục dùng `--scenario` để luyện tập và **không** được
+tự tạo hay lấy challenge của lớp khác. Tôi ghi rõ điều này thay vì ghi một Challenge ID giả.
+Kịch bản dùng để điều tra: `rag_slow` (practice).
 
+**Khoảng thời gian điều tra:** file log cố ý chứa cả hai pha để nhìn thấy mốc chuyển trạng — phút
+`08:51` là traffic bình thường, phút `08:52` là lúc bật incident.
+
+**Triệu chứng từ metrics.** Bảng theo phút của `scripts/investigate.py`:
+
+| Phút | n | p50 (ms) | p95 (ms) | ttft_p95 | cost |
+|---|---:|---:|---:|---:|---:|
+| `08:51` bình thường | 7 | 150 | 889 | 50 | 0.0159 |
+| `08:52` sự cố | 13 | 2651 | 2651 | 50 | 0.0266 |
+
+p50 nhảy từ 150 ms lên 2651 ms, **error vẫn bằng 0**, `ttft_p95` không đổi. Nếu chỉ nhìn error rate thì
+sự cố này vô hình; và `ttft` bất biến là manh mối loại trừ ngay giả thuyết "model chậm".
+
+Một cái bẫy tôi gặp và ghi lại: vì log chứa cả hai pha, p95 nearest-rank của 20 mẫu (10 bình thường,
+10 sự cố) rơi vào **2651 ms**, tức **không vượt** ngưỡng 3000 ms của SLO. Trộn cửa sổ làm che mất sự
+vi phạm. Nên tôi lọc bằng ngưỡng 2000 ms — đúng nghĩa "chậm hơn baseline 10 lần" — thay vì bắt đầu từ
+con số SLO.
+
+**Log line và correlation ID liên quan.** 10/20 response vượt 2000 ms, ví dụ:
+
+```
+req-dbbb5aea  latency=2651ms  ttft=50ms  tokens=89/109
+req-52f1083b  latency=2651ms  ttft=50ms  tokens=41/133
+```
+
+**Trace ID và span gây ảnh hưởng.** Mở trace bằng chính `correlation_id` đó (nó cũng là key trong
+trace metadata, nên một định danh nối được log với trace):
+
+| correlation_id | traceId | `retrieve-context` | `generate-response` |
+|---|---|---|---|
+| `req-dbbb5aea` | `057392136688d5f0ddab949dfb183cc9` | **2.500 s (94.3%)** | 0.151 s (5.7%) |
+| `req-52f1083b` | `b0e62dc7f8cf90f6044bae5ebc30a73b` | **2.500 s (94.3%)** | 0.150 s (5.7%) |
+
+Span chậm là `retrieve-context`; `generate-response` vẫn 0.15 s với `ttft=0.05s`, model và cost bình
+thường. Không có child observation thì trace chỉ có node `lab-agent-run` và tôi **không thể** phân
+biệt "RAG chậm" với "model chậm" — đây chính là lý do phần CP2 đáng giá.
+
+**Root cause.** `app/mock_rag.py::retrieve()` còn 2.5 s khi `STATE["rag_slow"]` bật, và toàn bộ thời
+gian đó nằm trong span `retrieve-context`. Root cause ở bước retrieval, không phải ở model và không
+phải ở prompt: trace ghi `prompt=day13-chat:1`, `prompt_source=langfuse`, đúng version với baseline, nên
+loại trừ được giả thuyết prompt.
+
+**Fix action.** Tắt incident rồi đo lại trên cùng workload:
+`python scripts/inject_incident.py --scenario rag_slow --disable` → p50 về 150 ms, 0/4 alert bắn,
+dashboard về đúng baseline. Fix vĩnh lau dài hạn là đặt deadline cho retrieval và phục vụ fallback
+thay vì chờ.
+
+**Preventive measure — phát hiện thêm trong lúc điều tra.** Client quan sát thấy request chậm tới
+**14.2 s** trong khi log chỉ ghi **3.5 s**: tức con số mà SLO, dashboard và alert đánh giá thấp hơn thực
+tế **4.0 lần**. Nguyên nhân: handler `/chat` là `async def` nhưng gọi trực tiếp `agent.run()` blocking
+(vốn dùng `time.sleep`) trên event loop, nên các request xếp hàng nối tiếp nhau. Sửa bằng
+`await run_in_threadpool(agent.run, ...)`:
+
+| | client median | client max | server max | server thấp hơn thực tế |
+|---|---:|---:|---:|---:|
+| Trước | 13266 ms | 14172 ms | 3503 ms | **4.0×** |
+| Sau | 2655 ms | 3494 ms | 3449 ms | **1.0×** |
+
+Quan trọng hơn tốc độ là **tỉ lệ**: sau khi sửa, con số ghi ra log và con số người dùng chịu đựng khớp
+nhau, nghĩa là SLO cuối cùng đo đúng thứ người dùng cảm nhận. Bằng chứng:
+`evidence/14-queueing-before-after.txt` (đo cả hai vế trên cùng workload bằng `git stash`).
+
+Ba hệ quả tôi ghi lại trong `docs/alerts.md`: (1) đo latency ở biên chứ không chỉ trong tiến trình;
+(2) khi nghi ngờ nghẽn hàng đợi, so số client với số server; (3) `ttft_p95` bất biến là manh mối loại
+trừ "model chậm".
 ## 8. Giải thích và tự đánh giá
 
 - **Một quyết định kỹ thuật quan trọng và lý do:**

@@ -5,6 +5,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import JSONResponse
+from starlette.concurrency import run_in_threadpool
 from structlog.contextvars import bind_contextvars
 
 from .agent import LabAgent
@@ -72,7 +73,14 @@ async def chat(request: Request, body: ChatRequest) -> ChatResponse:
         payload={"message_preview": summarize_text(body.message)},
     )
     try:
-        result = agent.run(
+        # LabAgent.run is blocking (it sleeps to simulate a model call). Calling
+        # it directly from an async handler pins the event loop, so concurrent
+        # requests queue up behind each other: the CP3 investigation measured
+        # every request at 2.65 s server-side while clients waited up to 16.7 s.
+        # Running it in the threadpool keeps the loop free, so the latency we
+        # log and alert on is the latency users actually experience.
+        result = await run_in_threadpool(
+            agent.run,
             user_id=body.user_id,
             feature=body.feature,
             session_id=body.session_id,

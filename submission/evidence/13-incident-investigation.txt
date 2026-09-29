@@ -1,0 +1,137 @@
+# CP3 - INCIDENT INVESTIGATION (PRACTICE scenario: rag_slow)
+#
+# NOT the official challenge: config/challenge.json has not been released to
+# this repository (see docs/CHECKPOINTS.md CP3). The lab allows practising with
+# --scenario until the coach releases the per-cohort file, so the investigation
+# below is run against the practice incident and is labelled as such.
+#
+# METHOD: metrics -> logs -> traces -> root cause, using one correlation_id.
+#
+# The log deliberately contains BOTH phases: healthy traffic first, then the
+# incident, so step 1 can show the symptom and the moment it started.
+
+==========================================================================
+PHASE A - healthy baseline, no incident
+==========================================================================
+[200] req-3cad9260 | qa | 762.5ms
+[200] req-9d58e1b4 | qa | 763.5ms
+[200] req-3cf64390 | qa | 763.9ms
+
+metrics:
+{"traffic":10,"latency_p50":150.0,"latency_p95":814.0,"latency_p99":814.0,"ttft_p95":50.0,"avg_cost_usd":0.0024,"total_cost_usd":0.0236,"tokens_in_total":900,"tokens_out_total":1394,"error_breakdown":{},"quality_avg":0.88}
+alerts:
+alert                 state    signal                           value  rule               n  owner
+--------------------------------------------------------------------------------------------------
+slow_answers          OK       latency_p95_ms                     814  > 3000            21  backend-oncall
+answers_failing       OK       error_rate_pct                       0  > 2               21  backend-oncall
+retrieval_quality_dropOK       retrieval_success_rate_pct         100  < 90              21  ml-platform
+token_cost_runaway    OK       cost_per_minute_usd             0.0236  > 0.05            21  ml-platform
+
+0 of 4 alerts firing
+
+dashboard after the healthy phase:
+  evidence/13-dashboard-phase-a-healthy.html
+
+==========================================================================
+PHASE B - inject the practice incident
+==========================================================================
+200 {'ok': True, 'incidents': {'rag_slow': True, 'tool_fail': False, 'cost_spike': False}}
+[200] req-823bdee5 | qa | 7959.5ms
+[200] req-bdc8311e | qa | 13263.6ms
+[200] req-f5dbaed4 | qa | 13264.2ms
+
+metrics:
+{"traffic":20,"latency_p50":814.0,"latency_p95":2651.0,"latency_p99":2651.0,"ttft_p95":50.0,"avg_cost_usd":0.0023,"total_cost_usd":0.0461,"tokens_in_total":1800,"tokens_out_total":2713,"error_breakdown":{},"quality_avg":0.88}
+
+alerts:
+alert                 state    signal                           value  rule               n  owner
+--------------------------------------------------------------------------------------------------
+slow_answers          OK       latency_p95_ms                    2651  > 3000            42  backend-oncall
+answers_failing       OK       error_rate_pct                       0  > 2               42  backend-oncall
+retrieval_quality_dropOK       retrieval_success_rate_pct         100  < 90              42  ml-platform
+token_cost_runaway    OK       cost_per_minute_usd             0.0461  > 0.05            42  ml-platform
+
+0 of 4 alerts firing
+
+dashboard during the incident:
+  evidence/13-dashboard-phase-b-incident.html
+
+==========================================================================
+INVESTIGATION - python scripts/investigate.py --latency-threshold 2000 --top 2
+==========================================================================
+Why 2000 ms and not the SLO's 3000 ms: this log deliberately contains both
+the healthy phase and the incident phase. With 20 samples of which 10 are
+healthy, the nearest-rank p95 lands on 2651 ms, so the SLO's good_event
+(<= 3000 ms) is NOT breached. That is a real property of averaging a mixed
+window, and it is why an investigation does not start from the SLO: the
+symptom to look for is '10x slower than baseline', not 'over 3000 ms'.
+log file : /home/aminix/Projects/K4-L3A-Day13-NguyenHaiDang-2A202602963-Monitoring-LLMOps/data/logs.jsonl
+records  : 42  (2026-09-29T08:51:40.285989Z .. 2026-09-29T08:52:10.583797Z)
+
+==============================================================================
+STEP 1 - METRICS: what is the symptom and when does it start?
+==============================================================================
+minute               n      p50      p95  ttft_p95      cost
+------------------------------------------------------------
+2026-09-29T08:51    16      151     2651        50    0.0369
+2026-09-29T08:52     4     2651     2651        50    0.0092
+
+window p50=814 ms  p95=2651 ms  p99=2651 ms  max=2651 ms
+errors in window: 0  (none)
+The p95 column is what the SLO is judged on; a p50 that stays flat while p95
+climbs is the signature of a tail problem, not a general slowdown.
+
+==============================================================================
+STEP 2 - LOGS: requests slower than 2000 ms, and their correlation_id
+==============================================================================
+correlation_id     latency_ms  ttft_ms    tokens   session  message
+----------------------------------------------------------------------------------------------------
+req-dbbb5aea             2651       50    89/173       s02  
+req-52f1083b             2651       50    92/102       s01  
+
+10 of 20 responses exceeded 2000 ms.
+correlation_id is the only field needed for step 3: it is also the trace
+metadata key, so one identifier joins the log and the trace.
+
+==============================================================================
+STEP 3 - TRACES: which span is responsible inside those requests?
+==============================================================================
+
+correlation_id req-dbbb5aea  ->  traceId 057392136688d5f0ddab949dfb183cc9
+  trace      : day13-agent-request  user=95b6504a8bd6 session=s02  env=dev
+  prompt     : day13-chat:1 (langfuse)
+  RETRIEVER  retrieve-context       2.500s  94.3% of trace  ##################
+  GENERATION generate-response      0.151s   5.7% of trace  #
+             model=claude-sonnet-4-5 ttft=0.05 usage=262 cost=0.002862
+  -> slowest span: retrieve-context (2.5s of 2.652s). The root cause is inside this span, not in the model call.
+
+correlation_id req-52f1083b  ->  traceId b0e62dc7f8cf90f6044bae5ebc30a73b
+  trace      : day13-agent-request  user=2055254ee30a session=s01  env=dev
+  prompt     : day13-chat:1 (langfuse)
+  RETRIEVER  retrieve-context       2.500s  94.3% of trace  ##################
+  GENERATION generate-response      0.150s   5.7% of trace  #
+             model=claude-sonnet-4-5 ttft=0.049 usage=194 cost=0.001805999999
+  -> slowest span: retrieve-context (2.5s of 2.651s). The root cause is inside this span, not in the model call.
+
+==========================================================================
+MITIGATION - turn the incident off, then re-measure on a fresh log
+==========================================================================
+200 {'ok': True, 'incidents': {'rag_slow': False, 'tool_fail': False, 'cost_spike': False}}
+[200] req-c5e44fec | qa | 763.3ms
+[200] req-18eb956d | qa | 764.1ms
+[200] req-d4f427b2 | qa | 765.2ms
+
+metrics after mitigation:
+{"traffic":10,"latency_p50":150.0,"latency_p95":802.0,"latency_p99":802.0,"ttft_p95":50.0,"avg_cost_usd":0.0022,"total_cost_usd":0.0224,"tokens_in_total":900,"tokens_out_total":1316,"error_breakdown":{},"quality_avg":0.88}
+
+alerts after mitigation (fresh log, so the window no longer contains the
+incident minutes):
+--------------------------------------------------------------------------------------------------
+slow_answers          OK       latency_p95_ms                     802  > 3000            21  backend-oncall
+answers_failing       OK       error_rate_pct                       0  > 2               21  backend-oncall
+retrieval_quality_dropOK       retrieval_success_rate_pct         100  < 90              21  ml-platform
+token_cost_runaway    OK       cost_per_minute_usd             0.0224  > 0.05            21  ml-platform
+
+0 of 4 alerts firing
+
+dashboard after mitigation: evidence/13-dashboard-phase-c-mitigated.html
