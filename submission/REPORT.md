@@ -4,21 +4,24 @@
 
 ## 1. Thông tin học viên
 
-- **Họ và tên:**
-- **MSSV:**
+- **Họ và tên:** Nguyen Hai Dang
+- **MSSV:** 2A202602963
 - **Lớp:** K4-L3A
-- **Repository URL:**
-- **Commit SHA cuối:**
-- **Challenge ID:**
-- **Tên project Langfuse cá nhân:** `day13-k4-l3a-<MSSV>`
+- **Repository URL:** _(điền URL repo cá nhân khi push)_
+- **Commit SHA cuối:** _(ghi lại sau CP4)_
+- **Challenge ID:** _(điền sau CP3)_
+- **Tên project Langfuse cá nhân:** `day13-k4-l3a-2A202602963`
 
 ## 2. Evidence index
 
 Điền đúng đường dẫn tới evidence thực tế. Có thể đổi tên hoặc dùng nhiều ảnh nếu cần.
 
+Evidence dạng text/JSON (baseline và output lệnh) được commit cạnh ảnh; ảnh PNG dùng cho
+trace waterfall, prompt version, rollback và dashboard runtime.
+
 | Evidence | Đường dẫn |
 |---|---|
-| Pytest cuối | `evidence/01-pytest.png` |
+| Pytest cuối | `evidence/01-pytest.png` (kèm `evidence/01-pytest.txt`) |
 | Log validator | `evidence/02-log-validator.png` |
 | Dashboard validator | `evidence/03-dashboard-validator.png` |
 | Structured log | `evidence/04-structured-log.png` |
@@ -35,15 +38,18 @@
 
 ## 3. Kết quả kỹ thuật
 
+Baseline đo ở CP0 với `python scripts/load_test.py` (10 query mẫu), API chạy bằng starter code, chưa sửa TODO nào.
+Evidence: `evidence/00-baseline-*.txt`, `evidence/00-baseline-metrics.json`.
+
 | Nội dung | Baseline | Kết quả cuối | Nhận xét |
 |---|---|---|---|
-| `validate_logs.py` | | | |
-| `validate_dashboard.py` | | | |
-| `pytest` | | | |
-| Số traces hợp lệ | | | |
-| Số PII leak | | | |
-| Latency P95 / TTFT P95 | | | |
-| Retrieval success rate | | | |
+| `validate_logs.py` | **30/100** | _xem CP1_ | FAILED 3/4 mục: thiếu required field, 0 correlation ID, thiếu enrichment. PII "PASSED" một cách tình cờ vì `main.py` đã đi qua `summarize_text`; `scrub_event` chưa được nối vào chain nên chưa có nghĩa. |
+| `validate_dashboard.py` | `HỢP LỆ: 6/6 panel` | _xem CP2_ | Contract YAML đã đúng ngay từ starter; chỉ là chưa có dashboard runtime thật. |
+| `pytest` | 22 passed | _xem CP4_ | Test public bảo vệ contract, không cover TODO. |
+| Số traces hợp lệ | 10 trace, **chỉ root `AGENT`**, `model=null`, `usage=null` | _xem CP2_ | 10 observation `lab-agent-run`, không có child retriever/generation; `version=local-v1` vì chưa tạo prompt trong Langfuse. |
+| Số PII leak | 0 phát hiện | _xem CP1_ | Sample query chứa email + SĐT + thẻ; chỉ được che vì `summarize_text` cắt ngắn 80 ký tự. |
+| Latency P95 / TTFT P95 | **837 ms / 50 ms** | _xem CP2_ | P95 cao vì request đầu tiên lạnh; TTFT 50 ms là `time.sleep(0.05)` trong `FakeLLM`. |
+| Retrieval success rate | 100% (10/10 `tool_success=true`) | _xem CP3_ | Chưa bật incident nào. |
 
 ## 4. Logging và PII
 

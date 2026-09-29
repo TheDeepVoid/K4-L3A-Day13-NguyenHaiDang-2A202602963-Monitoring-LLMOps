@@ -1,0 +1,17 @@
+# CP0 baseline — Langfuse observations produced by the starter code (10 load-test requests)
+# GET /api/public/v2/observations (v1 /traces is legacy-unavailable for new orgs)
+
+3473e6fc402afa21  type=AGENT  name=lab-agent-run  model=null  ttft=null  version=local-v1  latency=0.382s  user=105a9cef3903  session=s10
+22ded8bb009ccc03  type=AGENT  name=lab-agent-run  model=null  ttft=null  version=local-v1  latency=0.407s  user=4d14d5d4f719  session=s09
+54fcc049c1df7f80  type=AGENT  name=lab-agent-run  model=null  ttft=null  version=local-v1  latency=0.433s  user=2f015d970c0b  session=s08
+f4a60b8783a3be17  type=AGENT  name=lab-agent-run  model=null  ttft=null  version=local-v1  latency=0.382s  user=1632c29ecdec  session=s07
+18d016e14ead38fd  type=AGENT  name=lab-agent-run  model=null  ttft=null  version=local-v1  latency=0.407s  user=4c4f62330d76  session=s06
+61d19e12ed4cda3d  type=AGENT  name=lab-agent-run  model=null  ttft=null  version=local-v1  latency=0.409s  user=64f6ec689229  session=s05
+325e2be1558d2696  type=AGENT  name=lab-agent-run  model=null  ttft=null  version=local-v1  latency=0.407s  user=75af07890985  session=s04
+be8b69814ee0daf7  type=AGENT  name=lab-agent-run  model=null  ttft=null  version=local-v1  latency=0.396s  user=97ce842ec69d  session=s03
+bab923e54c55e89a  type=AGENT  name=lab-agent-run  model=null  ttft=null  version=local-v1  latency=0.382s  user=95b6504a8bd6  session=s02
+dfad3d3e09554b07  type=AGENT  name=lab-agent-run  model=null  ttft=null  version=local-v1  latency=0.839s  user=2055254ee30a  session=s01
+
+Observation count: 10
+Distinct types: AGENT
+Note: only the root AGENT observation exists; no retriever/generation child, model=null, usage/cost=null.

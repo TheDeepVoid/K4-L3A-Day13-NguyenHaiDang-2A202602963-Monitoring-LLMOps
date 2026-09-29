@@ -1,0 +1,15 @@
+# CP0 baseline — GET /metrics after 10 requests
+
+{
+  "traffic": 10,
+  "latency_p50": 406.0,
+  "latency_p95": 837.0,
+  "latency_p99": 837.0,
+  "ttft_p95": 50.0,
+  "avg_cost_usd": 0.0021,
+  "total_cost_usd": 0.0209,
+  "tokens_in_total": 338,
+  "tokens_out_total": 1326,
+  "error_breakdown": {},
+  "quality_avg": 0.88
+}
