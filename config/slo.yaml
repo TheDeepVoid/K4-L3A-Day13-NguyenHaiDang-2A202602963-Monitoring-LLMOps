@@ -1,15 +1,86 @@
+# SLO for the Day 13 lab service.
+#
+# Thresholds are justified against my own measured baseline, not copied from
+# the starter. Measurements (evidence/11-dashboard-overview.txt):
+#   latency P50 = 150 ms, P95 = 877 ms, P99 = 877 ms, TTFT P95 = 50 ms
+#   retrieval is 0-1 ms, the model call is 151 ms
+#   error rate 0.0%, retrieval success 100%, cost 0.0242 USD for 10 requests
+#
+# The 3 s "good" latency threshold is deliberately just above the P95 baseline
+# (877 ms) but below the cost of a degraded retrieval: the rag_slow incident
+# adds 2.5 s to every request, which lands P95 at about 3.38 s and therefore
+# breaks this SLI. That gap is the point of the threshold - it is reachable by
+# a real symptom instead of being so tight it fires on normal noise.
 service: day13-l3a-monitoring-llmops-lab
+
 primary_slo:
   name: fast_successful_requests
+  # A request is "good" when it produced an answer within the latency budget.
+  # Counting request_received as the denominator means unanswered and failed
+  # requests burn budget too, instead of being invisible.
   window: 28d
   sli:
     good_event: 'event == "response_sent" and latency_ms <= 3000'
     total_event: 'event == "request_received"'
   target_percent: 99.5
   error_budget_percent: 0.5
-  note: Học viên phải giải thích hoặc điều chỉnh ngưỡng bằng baseline của mình.
+  # error_budget_percent = 100 - target_percent
+  # Over a 28d window that is 0.5% of all requests. At the measured baseline
+  # traffic of 10 requests/minute, that is ~2016 bad requests per 28 days,
+  # i.e. budget may be consumed at 100 requests/minute for ~20 minutes before
+  # it is exhausted, or by 10,080 bad requests spread over the whole month.
+  note: >-
+    Baseline P95 is 877 ms, so a 3000 ms budget is roughly 3.4x the measured P95
+    and still leaves the healthy path untouched. The rag_slow incident pushes P95
+    to ~3380 ms and consumes budget, which is the behaviour I want to detect.
+
+secondary_slos:
+  # The primary SLO can be met while the app gets steadily more expensive, so
+  # cost and retrieval quality are tracked as their own objectives.
+  - name: retrieval_available
+    window: 28d
+    sli:
+      good_event: 'tool_success == true'
+      total_event: 'tool_success != null'
+    target_percent: 99.0
+    error_budget_percent: 1.0
+    rationale: >-
+      Retrieval is a hard dependency: when it fails the user gets a 500, but a
+      silent degradation (empty or wrong documents) is not covered by the
+      latency SLO, so it gets its own objective.
+
+  - name: daily_token_cost
+    window: 30d
+    sli:
+      good_event: 'sum(cost_usd) <= 2.5'
+      total_event: 'sum(cost_usd)'
+    target_percent: 95.0
+    error_budget_percent: 5.0
+    rationale: >-
+      Spend is a budget objective, not a latency one. Measured cost is 0.0024
+      USD per request, so the 2.5 USD guardrail allows roughly 1000 requests
+      per day before it is at risk.
+
 guardrails:
+  # Hard limits. Unlike the SLOs these are not averaged away: a single
+  # violation means something is wrong right now.
   error_rate_pct_max: 2
+  latency_p95_ms_max: 3000
+  ttft_p95_ms_max: 500
   daily_cost_usd_max: 2.5
   quality_score_avg_min: 0.75
   retrieval_success_rate_pct_min: 90
+
+# How the budget is calculated, spelled out because the lab asks for it.
+error_budget:
+  formula: 'error_budget_percent = 100 - target_percent'
+  primary:
+    total_percent: 0.5
+    measurement_window: 28d
+    # 0.5% of the requests in the window. Illustrative numbers at the measured
+    # baseline of 10 requests/minute = 403,200 requests per 28 days.
+    allowed_bad_requests_per_window: 2016
+    policy: >-
+      When more than 50% of the budget is consumed, freeze non-essential
+      changes to prompts and models until it recovers. When it is exhausted,
+      all non-emergency work stops and the next change must be reliability work.

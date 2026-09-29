@@ -168,10 +168,78 @@ baseline đúng là `local-v1`; sau khi tạo prompt, cùng code đó trả `sou
 
 ## 6. Dashboard, SLO và alerts
 
-- **Dashboard và sáu panel:**
-- **SLO và lý do chọn:**
-- **Cách tính error budget:**
-- **Ba alert và runbook tương ứng:**
+**Dashboard và sáu panel.** Không cài thêm công cụ: `scripts/build_dashboard.py` đọc
+`config/dashboard.yaml` và `data/logs.jsonl` rồi sinh một file HTML tự chứa
+(`submission/evidence/11-dashboard-runtime.html`, có SVG inline và meta refresh 30s). Panel id, title,
+unit, events, threshold đều **đọc từ contract** chứ không hard-code; script sẽ báo lỗi nếu config
+thêm panel mà nó chưa biết. Percentile dùng chung `app.metrics.percentile` nên dashboard, `/metrics`
+và test đều dùng cùng một quy tắc nearest-rank.
+
+| Panel | Nguồn | Tổng hợp | Threshold | Baseline của tôi |
+|---|---|---|---|---|
+| latency | `response_sent` | p50/p95/p99 + ttft_p95 | p95 ≤ 3000 ms | 150 / 877 / 877 / 50 ms |
+| traffic | `request_received` | count, req/phút | ≥ 1 req/phút | 10 req |
+| errors | `request_received`, `request_failed` | error_rate_pct, breakdown, tool_success_rate_pct | error_rate ≤ 2% | 0.0% / 100% |
+| cost | `response_sent` | tổng theo phút, tổng | tổng ≤ 2.5 USD | 0.0242 USD |
+| tokens | `response_sent` | tổng theo field | ≤ 50000 | 900 in / 1435 out |
+| quality | `response_sent` | mean | mean ≥ 0.75 | 0.88 |
+
+Validator: `HỢP LỆ: 6/6 panel`. Evidence `11-dashboard-overview.txt` in từng giá trị hiển thị cạnh
+bản **tính lại độc lập bằng jq** từ cùng file log — hai cách khớp nhau ở cả 6 panel.
+
+**SLO và lý do chọn.** SLO chính `fast_successful_requests`, mục tiêu 99.5% trong 28 ngày:
+
+```yaml
+good_event: 'event == "response_sent" and latency_ms <= 3000'
+total_event: 'event == "request_received"'
+```
+
+Mẫu số là `request_received`, **không** phải `response_sent`, để request lỗi và request không trả lời
+cũng tiêu budget thay vì biến mất khỏi phép tính. Ngưỡng 3000 ms chọn từ baseline thật của tôi: P95
+đo được là 877 ms, nên 3000 ms còn dư khoảng 3.4 lần; quan trọng hơn, ngưỡng này **bị incident
+`rag_slow` phá vỡ** (P95 nhảy lên 3361–5416 ms tùy độ trễ), tức là SLO bắt được sự cố thật thay vì
+nằm ngoài tầm với. Tôi giữ nguyên ngưỡng của starter vì nó có lý do, và viết lý do đó ra thay vì
+đổi số cho vừa.
+
+Hai SLO phụ: `retrieval_available` (99%) vì retrieval hỏng thì có 500 nhưng retrieval *sai âm thầm*
+thì không, và `daily_token_cost` (95% ngày dưới 2.5 USD) vì chi phí tăng đều sẽ không bao giờ làm
+P95 vượt ngưỡng.
+
+**Cách tính error budget.** `error_budget_percent = 100 − target_percent` → 0.5% trong 28 ngày.
+Ở lưu lượng baseline 10 request/phút (= 403.200 request/28 ngày) thì budget cho phép **2016 request
+xấu**. Đọc theo hướng khác: đang ổn định thì có thể hỏng ~100 request/phút trong khoảng 20 phút trước
+khi hết budget, còn trải đều cả tháng thì phải xấu 10.080 request mới hết. Chính sách ghi trong
+`config/slo.yaml`: dùng hơn 50% budget thì đóng băng thay đổi prompt/model, hết budget thì dừng mọi
+việc không khẩn cấp.
+
+**Bốn alert và runbook tương ứng** (lab yêu cầu ba; tôi thêm một cái vì có một triệu chứng thật mà ba
+rule kia không bắt được):
+
+| Alert | Triệu chứng | Severity | Duration | Slack | Owner | Runbook | SLO |
+|---|---|---|---|---|---|---|---|
+| `slow_answers` | P95 latency > 3000 ms | high | 10 phút | `#day13-oncall` | backend-oncall | `docs/alerts.md#alert-1` | `fast_successful_requests` |
+| `answers_failing` | error rate > 2% | critical | 5 phút | `#day13-oncall` | backend-oncall | `docs/alerts.md#alert-2` | `fast_successful_requests` |
+| `retrieval_quality_drop` | retrieval success < 90% | medium | 15 phút | `#day13-llm-platform` | ml-platform | `docs/alerts.md#alert-3` | `retrieval_available` |
+| `token_cost_runaway` | > 0.05 USD/phút | medium | 15 phút | `#day13-llm-platform` | ml-platform | `docs/alerts.md#alert-4` | `daily_token_cost` |
+
+Tất cả đều viết trên **triệu chứng người dùng**, không phải trên nguyên nhân: "vector store chậm" là
+nguyên nhân — nó đưa kết luận cho người trực và im lặng khi một nguyên nhân khác gây ra cùng đau đớn.
+Alert thứ ba tồn tại vì retrieval trả về rỗng vẫn cho HTTP 200 với câu trả lời tự tin, mà latency
+và error rate đều không nhúc nhích.
+
+Alert không chỉ được *mô tả* mà được **chạy thật**: `scripts/evaluate_alerts.py` tính lại từng rule
+từ `data/logs.jsonl` (cùng nguồn với dashboard, nên hai bên không thể mâu thuẫn). Evidence
+`12-alert-evaluation.txt` cho thấy cả bốn rule im lặng trên baseline và **bắn đúng sự cố của mình**:
+
+| Workload | Alert bắn | Giá trị |
+|---|---|---|
+| baseline | — (0/4 firing) | P95 877 ms, error 0%, cost 0.024 USD/phút |
+| `rag_slow` | `slow_answers` | P95 **3361 ms** > 3000 |
+| `tool_fail` | `answers_failing` + `retrieval_quality_drop` | error **100%**, retrieval success **0%** |
+| `cost_spike` | `token_cost_runaway` | **0.0874 USD/phút** > 0.05 |
+
+Bốn bản dashboard sau mỗi kịch bản được lưu cạnh đó (`12-dashboard-{baseline,rag_slow,tool_fail,
+cost_spike}.html`) để so sánh trực quan.
 
 ## 7. Điều tra challenge
 

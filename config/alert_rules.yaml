@@ -1,25 +1,110 @@
+# Symptom-based alerts for the Day 13 lab service.
+#
+# Every rule below is written on a user-visible symptom or on the SLO, never on
+# an internal cause. "The vector store is slow" is a cause: it tells the
+# on-call engineer a conclusion instead of a symptom, and it stays silent when
+# a different cause produces the same user pain. "Answers take too long" is a
+# symptom: it pages for any cause, including ones nobody has seen yet.
+#
+# The `signal`, `window_minutes`, `operator`, `threshold` and `for_minutes`
+# fields are the machine-readable part: scripts/evaluate_alerts.py recomputes
+# every rule from data/logs.jsonl, so these rules can be shown firing instead
+# of only being described. The free-text `condition` is the human version of
+# the same thing, expressed in the panel query language of config/dashboard.yaml.
 alerts:
-  - name: TODO_alert_1
-    severity: TODO
-    condition: TODO
-    duration: TODO
+  - name: slow_answers
+    severity: high
+    condition: >-
+      p95 of response_sent.latency_ms exceeds 3000 ms - users are waiting more
+      than three seconds for an answer.
     type: symptom-based
     channel: slack
-    owner: TODO
+    slack_channel: "#day13-oncall"
+    owner: backend-oncall
     runbook: docs/alerts.md#alert-1
-  - name: TODO_alert_2
-    severity: TODO
-    condition: TODO
-    duration: TODO
+    signal: latency_p95_ms
+    operator: ">"
+    threshold: 3000
+    window_minutes: 10
+    duration: "10 minutes"
+    for_minutes: 10
+    slo: fast_successful_requests
+    query: 'event == "response_sent" | percentile(latency_ms, [95])'
+    # A single slow request must not page anyone, so the rule needs the
+    # condition to hold for as long as the window it measures.
+    rationale: >-
+      Fires on the user symptom, not on the retrieval that caused it. Under the
+      measured baseline (P95 877 ms) this has 3.4x headroom; the rag_slow
+      incident moves P95 to about 3380 ms and pages.
+
+  - name: answers_failing
+    severity: critical
+    condition: >-
+      error rate above 2% - users are being told the request failed instead of
+      getting an answer.
     type: symptom-based
     channel: slack
-    owner: TODO
+    slack_channel: "#day13-oncall"
+    owner: backend-oncall
     runbook: docs/alerts.md#alert-2
-  - name: TODO_alert_3
-    severity: TODO
-    condition: TODO
-    duration: TODO
+    signal: error_rate_pct
+    operator: ">"
+    threshold: 2
+    window_minutes: 5
+    duration: "5 minutes"
+    for_minutes: 5
+    slo: fast_successful_requests
+    query: >-
+      count(event == "request_failed") / count(event == "request_received") * 100
+    rationale: >-
+      The user-visible failure rate, and the fastest signal to act on. It fires
+      for the retrieval outage (tool_fail) and for anything else that returns
+      HTTP 500, so it does not need to know the cause. 5 minutes is short
+      because a broken endpoint is not self-healing.
+
+  - name: retrieval_quality_drop
+    severity: medium
+    condition: >-
+      retrieval success rate below 90% - most answers are no longer being
+      grounded in the document set.
     type: symptom-based
     channel: slack
-    owner: TODO
+    slack_channel: "#day13-llm-platform"
+    owner: ml-platform
     runbook: docs/alerts.md#alert-3
+    signal: retrieval_success_rate_pct
+    operator: "<"
+    threshold: 90
+    window_minutes: 15
+    duration: "15 minutes"
+    for_minutes: 15
+    slo: retrieval_available
+    query: 'count(tool_success == true) / count(tool_success != null) * 100'
+    rationale: >-
+      Catches silent degradation that latency and error rate cannot see. A
+      retrieval that returns nothing still returns HTTP 200 with a confident
+      answer, so only this signal notices. Slower to page (15 min) because the
+      user impact is quality, not availability.
+
+  - name: token_cost_runaway
+    severity: medium
+    condition: >-
+      spend above 0.05 USD per minute for 15 minutes - at the current rate this
+      is above the 2.5 USD per day guardrail.
+    type: symptom-based
+    channel: slack
+    slack_channel: "#day13-llm-platform"
+    owner: ml-platform
+    runbook: docs/alerts.md#alert-4
+    signal: cost_per_minute_usd
+    operator: ">"
+    threshold: 0.05
+    window_minutes: 15
+    duration: "15 minutes"
+    for_minutes: 15
+    slo: daily_token_cost
+    query: 'event == "response_sent" | sum(cost_usd) by 1m'
+    rationale: >-
+      Cost is a symptom of a waste problem, not of a specific model. The
+      cost_spike incident multiplies output tokens fourfold, and this pages
+      without needing to know that a prompt change or a traffic change did it.
