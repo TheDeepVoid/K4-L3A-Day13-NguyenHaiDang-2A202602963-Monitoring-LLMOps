@@ -75,13 +75,33 @@ class LabAgent:
                     metadata={"doc_count": len(docs), "corpus": "mock_rag"},
                 )
 
-            prompt = resolve_prompt(
-                langfuse_client,
-                feature=feature,
-                docs=docs,
-                message=message,
-                enabled=tracing_enabled(),
-            )
+            prompt = None
+            # The prompt fetch is a synchronous call to an external service and
+            # used to sit outside every span, so its cost was invisible: the
+            # first requests after a restart were ~900 ms against a 150 ms
+            # baseline, and no span in the trace accounted for it.
+            with langfuse_client.start_as_current_observation(
+                as_type="span",
+                name="resolve-prompt",
+                input={"feature": feature, "docs_count": len(docs)},
+            ) as prompt_span:
+                prompt = resolve_prompt(
+                    langfuse_client,
+                    feature=feature,
+                    docs=docs,
+                    message=message,
+                    enabled=tracing_enabled(),
+                )
+                prompt_span.update(
+                    output={"source": prompt.source, "version": prompt.version},
+                    metadata={
+                        "prompt_name": prompt.name,
+                        "prompt_label": prompt.label,
+                        "prompt_version": prompt.version,
+                        "prompt_source": prompt.source,
+                        "fetch_error": prompt.fetch_error or "",
+                    },
+                )
 
             # Child 2: the model call, as a sibling of retrieval. Passing
             # `prompt` links this generation to the exact prompt version used,

@@ -27,6 +27,25 @@ def _compile_local_prompt(*, feature: str, docs: list[str], message: str) -> str
     )
 
 
+def warm_prompt_cache(client: Any, *, enabled: bool) -> ResolvedPrompt | None:
+    """Fetch the prompt once so the first real request does not pay for it.
+
+    resolve_prompt makes a synchronous HTTP call to Langfuse whenever its 60s
+    client cache is cold. Measured on this lab: requests right after a restart
+    took about 900 ms while warm requests took 150 ms, and that extra time was
+    invisible in the trace because the fetch sat outside every span.
+    """
+    if not enabled:
+        return None
+    return resolve_prompt(
+        client,
+        feature="warmup",
+        docs=[],
+        message="warmup",
+        enabled=True,
+    )
+
+
 def resolve_prompt(
     client: Any,
     *,

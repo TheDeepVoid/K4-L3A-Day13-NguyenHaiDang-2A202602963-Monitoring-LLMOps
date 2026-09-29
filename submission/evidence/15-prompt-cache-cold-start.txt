@@ -1,0 +1,54 @@
+# PREVENTIVE MEASURE 2 - the cold-start prompt fetch
+#
+# Found while collecting final numbers: p50 had jumped from 150 ms to 898 ms
+# with no errors and no incident. The cause was not the service. The first
+# requests after a restart miss the Langfuse prompt cache, so resolve_prompt
+# performs a synchronous HTTPS call to Langfuse inline in the request path.
+#
+# It was invisible for a second reason: the fetch sat between the retrieval
+# and generation spans, outside every observation, so no span accounted for
+# the extra 750 ms. The trace said 2 spans totalling 300 ms while the log said
+# 900 ms - the two signals disagreed and neither was obviously wrong.
+#
+# Fixes: a resolve-prompt span so the dependency is part of the tree, and a
+# warm_prompt_cache() call in the FastAPI lifespan so the first user request
+# does not pay for someone else's cold cache.
+
+==========================================================================
+BEFORE - no span around the fetch, no warmup at startup
+==========================================================================
+--- before (restart, then the first 10 requests at concurrency 5) ---
+  server latency_ms: min=150 median=151 p95=936 max=936 mean=541
+  per request: 928 930 933 933 936 150 150 150 150 151 
+  warmup event in the log: 0
+
+==========================================================================
+AFTER - resolve-prompt span + startup warmup
+==========================================================================
+--- after (restart, then the first 10 requests at concurrency 5) ---
+  server latency_ms: min=150 median=151 p95=152 max=152 mean=151
+  per request: 152 151 151 152 152 151 150 150 150 150 
+  warmup event in the log: 1
+
+  startup now logs which prompt version it warmed:
+{"event":"prompt_cache_warmed","payload":{"prompt_name":"day13-chat","prompt_version":"1","prompt_source":"langfuse"},"ts":"2026-09-29T09:00:18.566131Z"}
+
+  the fetch is now a node in the trace (newest complete trace):
+RETRIEVER  retrieve-context   (latency 0s)
+SPAN       resolve-prompt   (latency 0.001s)
+AGENT      lab-agent-run   (latency 0.151s)
+GENERATION generate-response   (latency 0.15s)
+
+  prompt resolution recorded on the span:
+    2bd3d8f957566453 trace=6181a2fa5d8680f23ede89ff50a08874 latency=0.001s source=langfuse version=1
+    04915a26206c46dc trace=45151873cb9dac980a345b11f0d31bd9 latency=0s source=langfuse version=1
+    37e21eef7bc57aee trace=118a098a5473c342b0a20a82266bb275 latency=0s source=langfuse version=1
+
+==========================================================================
+Tests and validators after the change
+==========================================================================
+.................................................                        [100%]
+49 passed in 3.67s
+
+Estimated Score: 100/100
+HỢP LỆ: 6/6 panel có trong dashboard contract.

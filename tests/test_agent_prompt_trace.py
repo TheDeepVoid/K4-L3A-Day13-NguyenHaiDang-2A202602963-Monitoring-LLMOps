@@ -7,6 +7,9 @@ from app import agent as agent_module
 
 class ManagedPrompt:
     version = 3
+    # The SDK drops a prompt link that carries no name, so the fake needs one
+    # for propagate_attributes() to behave like the real managed prompt.
+    name = "day13-chat"
 
     def compile(self, **variables: str) -> str:
         return (
@@ -89,9 +92,11 @@ def test_agent_records_prompt_version_with_v4_observation_api(monkeypatch) -> No
     assert propagated[-1]["prompt"] is client.prompt
 
 
-def test_agent_creates_retriever_and_generation_child_observations(monkeypatch) -> None:
-    """The tree must separate retrieval from the model call, with the most
-    specific observation types and the usage/cost needed for model analytics."""
+def test_agent_creates_retriever_prompt_and_generation_observations(monkeypatch) -> None:
+    """The tree must separate retrieval, the prompt lookup and the model call,
+    with the most specific observation types and the usage/cost needed for model
+    analytics. resolve-prompt exists because a synchronous fetch to an external
+    service that sits outside every span is a latency you cannot explain."""
     client = RecordingLangfuseClient()
     monkeypatch.setattr(agent_module, "get_langfuse_client", lambda: client)
     monkeypatch.setattr(agent_module, "tracing_enabled", lambda: True)
@@ -107,11 +112,15 @@ def test_agent_creates_retriever_and_generation_child_observations(monkeypatch) 
     )
 
     by_name = {obs.init["name"]: obs for obs in client.observations}
-    assert set(by_name) == {"retrieve-context", "generate-response"}
+    assert set(by_name) == {"retrieve-context", "resolve-prompt", "generate-response"}
 
     retrieval = by_name["retrieve-context"]
     assert retrieval.init["as_type"] == "retriever"
     assert retrieval.updates[0]["metadata"]["doc_count"] == 1
+
+    prompt_span = by_name["resolve-prompt"]
+    assert prompt_span.init["as_type"] == "span"
+    assert prompt_span.updates[0]["output"] == {"source": "langfuse", "version": "3"}
 
     generation = by_name["generate-response"]
     assert generation.init["as_type"] == "generation"

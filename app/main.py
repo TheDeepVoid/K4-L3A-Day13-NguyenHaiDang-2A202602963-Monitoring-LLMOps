@@ -14,6 +14,7 @@ from .logging_config import configure_logging, get_logger
 from .metrics import record_error, snapshot
 from .middleware import CorrelationIdMiddleware
 from .pii import hash_user_id, summarize_text
+from .prompt_management import warm_prompt_cache
 from .schemas import ChatRequest, ChatResponse
 from .tracing import get_langfuse_client, tracing_enabled
 
@@ -30,6 +31,21 @@ async def lifespan(_: FastAPI):
         env=os.getenv("APP_ENV", "dev"),
         payload={"tracing_enabled": tracing_enabled()},
     )
+    # Warm the prompt cache on startup. Without this, the first requests after a
+    # restart pay a synchronous fetch to Langfuse and look ~6x slower than the
+    # warm baseline, which is a cold-start artefact and not a real regression.
+    if tracing_enabled():
+        warmed = warm_prompt_cache(get_langfuse_client(), enabled=True)
+        if warmed is not None:
+            log.info(
+                "prompt_cache_warmed",
+                service="control",
+                payload={
+                    "prompt_name": warmed.name,
+                    "prompt_version": warmed.version,
+                    "prompt_source": warmed.source,
+                },
+            )
     yield
     # The Langfuse SDK buffers observations in background threads. Without an
     # explicit flush on shutdown the last in-flight traces are lost, which is
