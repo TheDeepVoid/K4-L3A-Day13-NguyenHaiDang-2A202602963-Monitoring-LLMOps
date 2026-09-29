@@ -500,13 +500,13 @@ Cách tôi xử lý, và lý do không có gì bị bỏ sót:
   là thứ duy nhất cần nộp.
 - **Các commit sau đó chỉ sửa văn bản trong chính báo cáo này.** Không code, test, config hay evidence
   nào thay đổi, nên chấm theo con số ở mục 1 hay theo tip của nhánh cho kết quả giống hệt nhau.
-- **Lệch đúng một bước, và đây là điều duy nhất cần biết.** Tip của `main` sẽ khác con số ở mục 1, vì
-  chính commit ghi con số đó là bước kế tiếp. `docs/SUBMISSION.md` nói "các thay đổi sau deadline không
-  được dùng để chấm", nên nếu tôi còn commit gì sau khi nộp thì phải cập nhật lại con số ở mục 1.
+- **Tip của `main` luôn khác con số ở mục 1**, vì chính các commit ghi và sửa dòng số đó nằm *sau* nó.
+  `docs/SUBMISSION.md` nói "các thay đổi sau deadline không được dùng để chấm", nên nếu tôi còn commit
+  gì sau khi nộp thì phải cập nhật lại con số ở mục 1.
 - **Cách tự kiểm chứng trước khi nộp** — chạy hai lệnh này, rồi đọc kết quả:
 
   ```bash
-  # 1. Tip của nhánh đã push (bằng hoặc dài hơn một bước so với mục 1)
+  # 1. Tip của nhánh đã push (nhiều hơn mục 1 vài bước)
   git rev-parse origin/main
 
   # 2. Có gì thay đổi giữa con số ở mục 1 và tip? Phải chỉ ra submission/REPORT.md
