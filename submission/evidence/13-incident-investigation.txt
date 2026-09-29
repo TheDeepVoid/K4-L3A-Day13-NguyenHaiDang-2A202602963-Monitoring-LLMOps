@@ -24,11 +24,12 @@ Challenge: day13-k4-l3a-monitoring-llmops-v1 | Cohort: K4
 metrics:
 {"traffic":5,"latency_p50":150.0,"latency_p95":151.0,"latency_p99":151.0,"ttft_p95":50.0,"avg_cost_usd":0.0021,"total_cost_usd":0.0107,"tokens_in_total":455,"tokens_out_total":622,"error_breakdown":{},"quality_avg":0.84}
 alerts:
---------------------------------------------------------------------------------------------------
-slow_answers          OK       latency_p95_ms                     151  > 1000            12  backend-oncall
-answers_failing       OK       error_rate_pct                       0  > 2               12  backend-oncall
-retrieval_quality_dropOK       retrieval_success_rate_pct         100  < 90              12  ml-platform
-token_cost_runaway    OK       cost_per_minute_usd             0.0107  > 0.05            12  ml-platform
+alert                   state  signal                       value  rule     n  owner
+---------------------------------------------------------------------------------------------
+slow_answers            OK     latency_p95_ms                 151  > 1000  12  backend-oncall
+answers_failing         OK     error_rate_pct                   0  > 2     12  backend-oncall
+retrieval_quality_drop  OK     retrieval_success_rate_pct     100  < 90    12  ml-platform
+token_cost_runaway      OK     cost_per_minute_usd         0.0107  > 0.05  12  ml-platform
 
 0 of 4 alerts firing
   dashboard: evidence/17-challenge-dashboard-phase-a-healthy.html
@@ -51,10 +52,12 @@ metrics:
 {"traffic":10,"latency_p50":2651.0,"latency_p95":2651.0,"latency_p99":2651.0,"ttft_p95":50.0,"avg_cost_usd":0.0023,"total_cost_usd":0.0227,"tokens_in_total":910,"tokens_out_total":1333,"error_breakdown":{},"quality_avg":0.84}
 
 alerts:
-slow_answers          FIRING   latency_p95_ms                    2651  > 1000            23  backend-oncall
-answers_failing       OK       error_rate_pct                       0  > 2               23  backend-oncall
-retrieval_quality_dropOK       retrieval_success_rate_pct         100  < 90              23  ml-platform
-token_cost_runaway    OK       cost_per_minute_usd             0.0227  > 0.05            23  ml-platform
+alert                   state   signal                       value  rule     n  owner
+----------------------------------------------------------------------------------------------
+slow_answers            FIRING  latency_p95_ms                2651  > 1000  23  backend-oncall
+answers_failing         OK      error_rate_pct                   0  > 2     23  backend-oncall
+retrieval_quality_drop  OK      retrieval_success_rate_pct     100  < 90    23  ml-platform
+token_cost_runaway      OK      cost_per_minute_usd         0.0227  > 0.05  23  ml-platform
 
   slow_answers -> Slack #day13-oncall (backend-oncall), runbook docs/alerts.md#alert-1
 
@@ -157,11 +160,12 @@ metrics after mitigation:
 {"traffic":5,"latency_p50":150.0,"latency_p95":151.0,"latency_p99":151.0,"ttft_p95":50.0,"avg_cost_usd":0.0025,"total_cost_usd":0.0126,"tokens_in_total":455,"tokens_out_total":752,"error_breakdown":{},"quality_avg":0.84}
 
 alerts after mitigation:
---------------------------------------------------------------------------------------------------
-slow_answers          OK       latency_p95_ms                     151  > 1000            12  backend-oncall
-answers_failing       OK       error_rate_pct                       0  > 2               12  backend-oncall
-retrieval_quality_dropOK       retrieval_success_rate_pct         100  < 90              12  ml-platform
-token_cost_runaway    OK       cost_per_minute_usd             0.0126  > 0.05            12  ml-platform
+alert                   state  signal                       value  rule     n  owner
+---------------------------------------------------------------------------------------------
+slow_answers            OK     latency_p95_ms                 151  > 1000  12  backend-oncall
+answers_failing         OK     error_rate_pct                   0  > 2     12  backend-oncall
+retrieval_quality_drop  OK     retrieval_success_rate_pct     100  < 90    12  ml-platform
+token_cost_runaway      OK     cost_per_minute_usd         0.0126  > 0.05  12  ml-platform
 
 0 of 4 alerts firing
   dashboard: evidence/17-challenge-dashboard-phase-c-mitigated.html
@@ -181,7 +185,7 @@ ROOT CAUSE, FIX AND PREVENTION
                The permanent fix is a deadline on retrieval plus a cached
                fallback, so a slow index degrades quality instead of latency.
 
-  Prevention : (1) the `slow_answers` alert on p95 > 3000 ms, and
+  Prevention : (1) the `slow_answers` alert on p95 > 1000 ms, and
                (2) the `retrieval_quality_drop` alert, both demonstrated firing
                in evidence/12-alert-evaluation.txt;
                (3) the `retrieve-context` observation itself - before CP2 the

@@ -14,7 +14,10 @@ no credentials are configured. Steps 1 and 2 read only data/logs.jsonl.
 
 Usage:
     python scripts/investigate.py
-    python scripts/investigate.py --latency-threshold 3000 --top 3
+    python scripts/investigate.py --latency-threshold 2000 --top 3
+
+--latency-threshold defaults to latency_threshold_ms in config/challenge.json
+when that file is present, and to 3000 ms otherwise.
 """
 
 from __future__ import annotations
@@ -231,8 +234,11 @@ def main() -> int:
     configure_utf8_stdio()
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--logs", type=Path, default=REPO_ROOT / "data" / "logs.jsonl")
-    parser.add_argument("--latency-threshold", type=int, default=3000,
-                        help="ms; a request above this is treated as symptomatic")
+    parser.add_argument("--latency-threshold", type=int, default=None,
+                        help="ms; a request above this is treated as symptomatic. "
+                             "Defaults to latency_threshold_ms from config/challenge.json when "
+                             "that file is present, because the challenge ships a threshold for "
+                             "exactly this scenario; otherwise 3000.")
     parser.add_argument("--top", type=int, default=3, help="how many slow requests to trace")
     parser.add_argument("--skip-traces", action="store_true")
     parser.add_argument(
@@ -249,6 +255,21 @@ def main() -> int:
     )
     args = parser.parse_args()
 
+    # The challenge ships a latency_threshold_ms for exactly this scenario. Using
+    # the SLO number instead is the trap CP3 is built around: on a log that mixes
+    # healthy and incident traffic the p95 lands below the SLO budget and the
+    # investigation concludes "no violation" while the incident is real.
+    threshold_source = "from --latency-threshold"
+    if args.latency_threshold is None:
+        args.latency_threshold = 3000
+        threshold_source = "default 3000 ms (no challenge file)"
+        challenge = REPO_ROOT / "config" / "challenge.json"
+        if challenge.exists():
+            shipped = json.loads(challenge.read_text(encoding="utf-8")).get("latency_threshold_ms")
+            if isinstance(shipped, int):
+                args.latency_threshold = shipped
+                threshold_source = f"{shipped} ms from {challenge.name}"
+
     records = load_records(args.logs)
     if not records:
         print(f"no records in {args.logs}; start the API and run scripts/load_test.py")
@@ -257,7 +278,8 @@ def main() -> int:
     first = datetime.fromisoformat(records[0]["ts"].replace("Z", "+00:00"))
 
     print(f"log file : {args.logs}")
-    print(f"records  : {len(records)}  ({records[0]['ts']} .. {records[-1]['ts']})\n")
+    print(f"records  : {len(records)}  ({records[0]['ts']} .. {records[-1]['ts']})")
+    print(f"threshold: {threshold_source}\n")
 
     step_metrics(records)
     slow = step_logs(records, args.latency_threshold, args.top)

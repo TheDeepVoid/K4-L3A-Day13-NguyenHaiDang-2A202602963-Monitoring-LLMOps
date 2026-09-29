@@ -509,4 +509,4 @@ trong git object cục bộ trong một khoảng thời gian, và nguyên tắc 
       API để người chấm tự kiểm chứng lại bằng key.
 - [x] **Key đã rotate** và key cũ đã trả 401; toàn bộ evidence được tạo lại bằng key mới.
 - [x] **Không có ảnh chụp trang API Keys** — không mở `/settings/api-keys` ở bất kỳ ảnh nào.
-- [ ] **Việc còn lại của tôi:** nộp URL repo + commit SHA ở mục 1 lên LMS/Codelabs.
+- [x] **Việc còn lại của tôi:** nộp URL repo + commit SHA ở mục 1 lên LMS/Codelabs.

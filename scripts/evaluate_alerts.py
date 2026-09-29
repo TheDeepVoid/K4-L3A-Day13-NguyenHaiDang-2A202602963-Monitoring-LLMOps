@@ -93,6 +93,29 @@ def breached(value: float, operator: str, threshold: float) -> bool:
     return value > threshold if operator == ">" else value < threshold
 
 
+HEADS = ("alert", "state", "signal", "value", "rule", "n", "owner")
+ALIGNS = ("<", "<", "<", ">", "<", ">", "<")
+
+
+def render_table(cells: list[tuple[str, ...]]) -> str:
+    """Format alert rows as a fixed-width table.
+
+    Every column width is measured from the data. Hardcoded widths silently ran
+    two columns together as soon as a rule name outgrew its column, which read
+    as a single word ("retrieval_quality_dropOK"). Kept as a function so the
+    evidence files can be re-aligned with exactly the code that produced them.
+    """
+    widths = [
+        max(len(h), *(len(c[i]) for c in cells)) if cells else len(h)
+        for i, h in enumerate(HEADS)
+    ]
+    lines = ["  ".join(f"{h:{a}{w}}" for h, a, w in zip(HEADS, ALIGNS, widths)).rstrip()]
+    lines.append("-" * (sum(widths) + 2 * (len(widths) - 1)))
+    for c in cells:
+        lines.append("  ".join(f"{v:{a}{w}}" for v, a, w in zip(c, ALIGNS, widths)).rstrip())
+    return "\n".join(lines)
+
+
 def main() -> int:
     configure_utf8_stdio()
     parser = argparse.ArgumentParser(description=__doc__)
@@ -143,24 +166,13 @@ def main() -> int:
     print(f"alert rules: {args.config.relative_to(REPO_ROOT)}")
     print(f"log records in file: {len(records)}\n")
 
-    # Size every column from the data. Hardcoded widths silently ran the columns
-    # together as soon as a rule name outgrew them, which read as one word.
     cells = [
         (r["name"], r["state"], r["signal"],
          "-" if r["value"] is None else f"{r['value']:g}",
          f"{r['operator']} {r['threshold']}", str(r["samples"]), r["owner"])
         for r in results
     ]
-    heads = ("alert", "state", "signal", "value", "rule", "n", "owner")
-    aligns = ("<", "<", "<", ">", "<", ">", "<")
-    widths = [
-        max(len(h), *(len(c[i]) for c in cells)) if cells else len(h)
-        for i, h in enumerate(heads)
-    ]
-    print("  ".join(f"{h:{a}{w}}" for h, a, w in zip(heads, aligns, widths)).rstrip())
-    print("-" * (sum(widths) + 2 * (len(widths) - 1)))
-    for c in cells:
-        print("  ".join(f"{v:{a}{w}}" for v, a, w in zip(c, aligns, widths)).rstrip())
+    print(render_table(cells))
     for r in firing:
         print(f"\n  {r['name']} -> Slack {r['slack_channel']} ({r['owner']}), runbook {r['runbook']}")
         if r["error_breakdown"]:

@@ -28,12 +28,12 @@ HỢP LỆ: 6/6 panel có trong dashboard contract.
 alert rules: config/alert_rules.yaml
 log records in file: 22
 
-alert                 state    signal                           value  rule               n  owner
---------------------------------------------------------------------------------------------------
-slow_answers          OK       latency_p95_ms                     151  > 1000            22  backend-oncall
-answers_failing       OK       error_rate_pct                       0  > 2               22  backend-oncall
-retrieval_quality_dropOK       retrieval_success_rate_pct         100  < 90              22  ml-platform
-token_cost_runaway    OK       cost_per_minute_usd             0.0212  > 0.05            22  ml-platform
+alert                   state  signal                       value  rule     n  owner
+---------------------------------------------------------------------------------------------
+slow_answers            OK     latency_p95_ms                 151  > 1000  22  backend-oncall
+answers_failing         OK     error_rate_pct                   0  > 2     22  backend-oncall
+retrieval_quality_drop  OK     retrieval_success_rate_pct     100  < 90    22  ml-platform
+token_cost_runaway      OK     cost_per_minute_usd         0.0212  > 0.05  22  ml-platform
 
 0 of 4 alerts firing
 
