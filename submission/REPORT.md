@@ -9,39 +9,40 @@
 - **Lớp:** L3A
 - **Repository URL:** _(điền URL repo cá nhân khi push)_
 - **Commit SHA cuối:** _(ghi lại sau CP4)_
-- **Challenge ID:** _(điền sau CP3)_
+- **Challenge ID:** `day13-k4-l3a-monitoring-llmops-v1`
 - **Tên project Langfuse cá nhân:** `day13-k4-l3a-2A202602963`
 
 ## 2. Evidence index
 
-Evidence của tôi gồm **file text/JSON có thể mở và kiểm chứng ngay** (output thật của lệnh, kèm
-trace ID và số đo), cộng với các bản dashboard HTML tự chứa. Tôi **không** có ảnh chụp giao diện
-Langfuse vì máy này không đăng nhập được vào Langfuse UI; thay vào đó mọi nhận định về trace đều lấy
-từ API `GET /api/public/v2/observations` của chính project của tôi, nên người chấm có thể kiểm chứng
-lại bằng API key của tôi. Phần nào cần ảnh UI thì tôi ghi rõ ở mục 8.
+Mỗi mục có **ảnh PNG** *và* **file text/HTML sinh ra thật**, để người chấm kiểm chứng lại bằng API key
+của tôi mà không phải tin vào ảnh. Ảnh chụp bằng Playwright/Chromium từ đúng những file text/HTML đó.
 
-| Evidence | Đường dẫn |
-|---|---|
-| Baseline (CP0) | `evidence/00-baseline-validate-logs.txt`, `00-baseline-validate-dashboard.txt`, `00-baseline-pytest.txt`, `00-baseline-metrics.json`, `00-baseline-traces.txt` |
-| Pytest + kiểm tra cuối | `evidence/01-pytest-and-final-checks.txt` |
-| Log validator | `evidence/01-log-validator-final.txt` |
-| Structured log + PII redaction | `evidence/02-pii-redaction.txt` |
-| Dashboard runtime (HTML) | `evidence/11-dashboard-runtime.html` + đối chiếu `evidence/11-dashboard-overview.txt` |
-| Trace list + waterfall | `evidence/06-trace-list-and-waterfall.txt` |
-| Trace metadata | `evidence/06-trace-list-and-waterfall.txt` (mục 1, mỗi observation in đủ field) |
-| Prompt versions | `evidence/09-prompt-versions.txt` |
-| Prompt promote/rollback | `evidence/10-prompt-rollback.txt` |
-| SLO + 4 alert bắn thật | `evidence/12-alert-evaluation.txt` |
-| Dashboard từng kịch bản | `evidence/12-dashboard-{baseline,rag_slow,tool_fail,cost_spike}.html` |
-| Điều tra incident | `evidence/13-incident-investigation.txt` + `13-dashboard-phase-{a-healthy,b-incident,c-mitigated}.html` |
-| Preventive measure 1 (queueing) | `evidence/14-queueing-before-after.txt` |
-| Preventive measure 2 (prompt cache) | `evidence/15-prompt-cache-cold-start.txt` |
-| Secret / PII scan | `evidence/16-secret-scan.txt` |
+| Evidence | Ảnh | File gốc (kiểm chứng được) |
+|---|---|---|
+| Baseline CP0 | — | `evidence/00-baseline-validate-logs.txt`, `00-baseline-validate-dashboard.txt`, `00-baseline-pytest.txt`, `00-baseline-metrics.json`, `00-baseline-traces.txt` |
+| Pytest + kiểm tra cuối | `evidence/01-pytest.png` | `evidence/01-pytest-and-final-checks.txt` |
+| Log validator | `evidence/02-log-validator.png` | `evidence/01-log-validator-final.txt` |
+| Dashboard validator + đối chiếu jq | `evidence/03-dashboard-validator.png` | `evidence/11-dashboard-overview.txt` |
+| Dashboard runtime | `evidence/11-dashboard-overview.png` | `evidence/11-dashboard-runtime.html` |
+| PII redaction | `evidence/05-pii-redaction.png` | `evidence/02-pii-redaction.txt` |
+| Trace list | `evidence/06-trace-list.png` | `evidence/06-trace-list.html` |
+| **Trace waterfall** | `evidence/07-trace-waterfall.png` | `evidence/07-trace-waterfall.html` |
+| Trace metadata | mục "Observation detail" trong ảnh waterfall | `evidence/07-trace-waterfall.html`, `evidence/06-trace-list-and-waterfall.txt` |
+| Prompt versions | `evidence/09-prompt-versions.png` | `evidence/09-prompt-versions.txt` |
+| Prompt promote/rollback | `evidence/10-prompt-rollback.png` | `evidence/10-prompt-rollback.txt` |
+| SLO + 4 alert bắn thật | `evidence/12-incident-metric.png` | `evidence/12-alert-evaluation.txt` |
+| Dashboard từng pha của challenge | `evidence/12-incident-dashboard-{healthy,incident,mitigated}.png` | `evidence/17-challenge-dashboard-phase-*.html` |
+| Điều tra challenge CP3 | `evidence/13-incident-investigation.png` | `evidence/13-incident-investigation.txt` |
+| Preventive measure 1 (queueing) | — | `evidence/14-queueing-before-after.txt` |
+| Preventive measure 2 (prompt cache) | `evidence/15-prompt-cache-cold-start.png` | `evidence/15-prompt-cache-cold-start.txt` |
+| Secret / PII scan | `evidence/16-secret-scan.png` | `evidence/16-secret-scan.txt` |
 
-Ba mục trong rubric gốc yêu cầu **ảnh** (`01-pytest.png`, `07-trace-waterfall.png`,
-`11-dashboard-overview.png`): `01` và `11` đã có bản text/HTML tương đương và kiểm chứng được; `07`
-cần ảnh giao diện Langfuse mà tôi không chụp được — nội dung waterfall đã có đầy đủ bằng text ở mục 1
-của `06-trace-list-and-waterfall.txt`.
+**Ảnh giao diện (UI) của Langfuse chưa có, và tôi nói rõ vì sao.** Web UI yêu cầu đăng nhập tương
+tác; tôi chỉ có API key, không có mật khẩu, và tôi không hỏi bạn dán mật khẩu vào chat. Nên `06` và
+`07` được dựng từ chính API `GET /api/public/v2/observations` bằng `scripts/render_trace_report.py`
+rồi chụp lại. Mọi con số, thanh thời gian và metadata đều là giá trị Langfuse trả về — không có gì
+vẽ tay — nhưng đây **không phải ảnh UI**. Nếu Lab Coach bắt buộc ảnh UI thì phải chụp lại khi đã đăng
+nhập; script vẫn chạy lại được ngay.
 
 ## 3. Kết quả kỹ thuật
 
@@ -55,8 +56,8 @@ Kết quả cuối đo ở CP4 trên một run sạch: restart API rồi `python
 |---|---|---|---|
 | `validate_logs.py` | **30/100** | **100/100** | Mọi mục PASS sau CP1. PII được scrub ở tầng processor, không còn phụ thuộc `summarize_text` ở từng call site. |
 | `validate_dashboard.py` | `HỢP LỆ: 6/6 panel` | `HỢP LỆ: 6/6 panel` | Contract đã đúng từ starter; giá trị nằm ở dashboard runtime thật, không phải ở validator. |
-| `pytest` | 22 passed | **49 passed** | +27 test: correlation ID, PII pipeline thật, trace tree, prompt fallback, dashboard maths, alert rules. |
-| Số traces hợp lệ | 10 trace, **chỉ root `AGENT`**, `model=null`, `usage=null` | **318 trace / 298 generation** trong phiên làm việc, 100% generation có prompt link (v1 và v2), 4 loại observation: `AGENT`, `RETRIEVER`, `SPAN`, `GENERATION` | Vượt yêu cầu ≥10 trace. |
+| `pytest` | 22 passed | **50 passed** | +28 test: correlation ID, PII pipeline thật, trace tree, prompt fallback, dashboard maths, alert rules, khoá ngưỡng theo incident thật. |
+| Số traces hợp lệ | 10 trace, **chỉ root `AGENT`**, `model=null`, `usage=null` | **285 trace / 275 generation** có prompt link, 4 loại observation: `AGENT`, `RETRIEVER`, `SPAN`, `GENERATION` | Vượt yêu cầu ≥10 trace. |
 | Số PII leak | 0 phát hiện | **0** ở cả log lẫn trace (quét toàn văn bản observation trả `none`) | Baseline "0" là do may mắn: `summarize_text` cắt 80 ký tự, chưa có processor. |
 | Latency P95 / TTFT P95 | 837 ms / 50 ms | **151 ms / 50 ms** | P95 giảm vì sửa 2 nguyên nhân thật: bỏ hàng đợi event loop và warm prompt cache. TTFT 50 ms là `time.sleep(0.05)` của `FakeLLM`. |
 | Retrieval success rate | 100% (10/10) | **100%** (10/10) | Và alert `retrieval_quality_drop` bắn đúng khi nó về 0% (`tool_fail`). |
@@ -200,16 +201,29 @@ bản **tính lại độc lập bằng jq** từ cùng file log — hai cách k
 **SLO và lý do chọn.** SLO chính `fast_successful_requests`, mục tiêu 99.5% trong 28 ngày:
 
 ```yaml
-good_event: 'event == "response_sent" and latency_ms <= 3000'
+good_event: 'event == "response_sent" and latency_ms <= 1000'
 total_event: 'event == "request_received"'
 ```
 
 Mẫu số là `request_received`, **không** phải `response_sent`, để request lỗi và request không trả lời
-cũng tiêu budget thay vì biến mất khỏi phép tính. Ngưỡng 3000 ms chọn từ baseline thật của tôi: P95
-đo được là 877 ms, nên 3000 ms còn dư khoảng 3.4 lần; quan trọng hơn, ngưỡng này **bị incident
-`rag_slow` phá vỡ** (P95 nhảy lên 3361–5416 ms tùy độ trễ), tức là SLO bắt được sự cố thật thay vì
-nằm ngoài tầm với. Tôi giữ nguyên ngưỡng của starter vì nó có lý do, và viết lý do đó ra thay vì
-đổi số cho vừa.
+cũng tiêu budget thay vì biến mất khỏi phép tính.
+
+**Ngưỡng này đã phải hiệu chỉnh lần thứ hai, và đó là bài học quan trọng nhất của phần này.** Bản
+đầu dùng `latency_ms <= 3000` và biện minh bằng P95 đo được 877 ms. Nhưng 877 ms đó **bị nhiễm**: nó
+chứa cả thời gian xếp hàng vì handler ghim event loop (mục 7). Sau khi sửa, baseline sạch là **151 ms**,
+và 3000 ms trở thành **19.9 lần** headroom — lỏng tới mức challenge incident (2651 ms, tức 17.6 lần
+baseline) **không còn vi phạm SLO nữa**. Nói cách khác: **sửa nút thắt đã âm thầm vô hiệu hóa chính
+alert đang canh nó.** Một ngưỡng được hiệu chỉnh trên một baseline bị nhiễm sẽ tự ngắt phòng thủ ngay
+khi nhiễm đó biến mất.
+
+1000 ms là **6.6 lần** baseline sạch: xa hơn nhiễu thường ngày để không cảnh báo oan, nhưng đủ chặt
+để bắt được cú nghẽn 2.5 s. Tôi ghi nguyên nhân hiệu chỉnh vào `config/slo.yaml` và
+`config/alert_rules.yaml`, và thêm một test khoá ngưỡng vào đúng incident nó phải bắt, để thay đổi
+baseline trong tương lai không thể lặp lại lỗi này trong im lặng.
+
+Một điểm tôi **không** sửa: `config/dashboard.yaml` vẫn giữ `threshold.value: 3000` như đề bài
+giao. Đó là contract bị chấm điểm và tài liệu nói rõ không tự chỉnh, nên tôi để nguyên và ghi rõ ở
+đây rằng ngưỡng của contract (3000) khác ngưỡng SLO/alert của tôi (1000).
 
 Hai SLO phụ: `retrieval_available` (99%) vì retrieval hỏng thì có 500 nhưng retrieval *sai âm thầm*
 thì không, và `daily_token_cost` (95% ngày dưới 2.5 USD) vì chi phí tăng đều sẽ không bao giờ làm
@@ -227,7 +241,7 @@ rule kia không bắt được):
 
 | Alert | Triệu chứng | Severity | Duration | Slack | Owner | Runbook | SLO |
 |---|---|---|---|---|---|---|---|
-| `slow_answers` | P95 latency > 3000 ms | high | 10 phút | `#day13-oncall` | backend-oncall | `docs/alerts.md#alert-1` | `fast_successful_requests` |
+| `slow_answers` | P95 latency > **1000 ms** (hiệu chỉnh, xem trên) | high | 10 phút | `#day13-oncall` | backend-oncall | `docs/alerts.md#alert-1` | `fast_successful_requests` |
 | `answers_failing` | error rate > 2% | critical | 5 phút | `#day13-oncall` | backend-oncall | `docs/alerts.md#alert-2` | `fast_successful_requests` |
 | `retrieval_quality_drop` | retrieval success < 90% | medium | 15 phút | `#day13-llm-platform` | ml-platform | `docs/alerts.md#alert-3` | `retrieval_available` |
 | `token_cost_runaway` | > 0.05 USD/phút | medium | 15 phút | `#day13-llm-platform` | ml-platform | `docs/alerts.md#alert-4` | `daily_token_cost` |
@@ -243,88 +257,111 @@ từ `data/logs.jsonl` (cùng nguồn với dashboard, nên hai bên không th�
 
 | Workload | Alert bắn | Giá trị |
 |---|---|---|
-| baseline | — (0/4 firing) | P95 877 ms, error 0%, cost 0.024 USD/phút |
-| `rag_slow` | `slow_answers` | P95 **3361 ms** > 3000 |
+| baseline | — (0/4 firing) | P95 151 ms, error 0%, cost 0.022 USD/phút |
+| `rag_slow` | `slow_answers` | P95 **2651 ms** > 1000 |
 | `tool_fail` | `answers_failing` + `retrieval_quality_drop` | error **100%**, retrieval success **0%** |
-| `cost_spike` | `token_cost_runaway` | **0.0874 USD/phút** > 0.05 |
+| `cost_spike` | `token_cost_runaway` | **0.075 USD/phút** > 0.05 |
 
 Bốn bản dashboard sau mỗi kịch bản được lưu cạnh đó (`12-dashboard-{baseline,rag_slow,tool_fail,
 cost_spike}.html`) để so sánh trực quan.
 
 ## 7. Điều tra challenge
 
-**Challenge ID:** **không có — đây là practice, không phải challenge chính thức.**
-`config/challenge.json` do Lab Coach phát riêng cho từng lớp và đã bị `.gitignore`; repo này không có
-file đó và `scripts/inject_incident.py` sẽ báo lỗi nếu thiếu. Theo `docs/CHECKPOINTS.md` CP3 và
-`README.md`, khi chưa có file được phát thì tiếp tục dùng `--scenario` để luyện tập và **không** được
-tự tạo hay lấy challenge của lớp khác. Tôi ghi rõ điều này thay vì ghi một Challenge ID giả.
-Kịch bản dùng để điều tra: `rag_slow` (practice).
+**Challenge ID:** `day13-k4-l3a-monitoring-llmops-v1` — cohort **K4**, seed **1311**, file
+`config/challenge.json` do Lab Coach phát riêng. File này đã bị `.gitignore` và **không** được commit;
+tôi kiểm tra lại bằng `git ls-files` trước khi nộp. Kịch bản: `rag_slow`, feature bị ảnh hưởng:
+`monitoring`, `latency_threshold_ms: 2000`.
 
-**Khoảng thời gian điều tra:** file log cố ý chứa cả hai pha để nhìn thấy mốc chuyển trạng — phút
-`08:51` là traffic bình thường, phút `08:52` là lúc bật incident.
+Lệnh đúng như `docs/CHECKPOINTS.md` CP3 yêu cầu — không truyền `--scenario`:
 
-**Triệu chứng từ metrics.** Bảng theo phút của `scripts/investigate.py`:
-
-| Phút | n | p50 (ms) | p95 (ms) | ttft_p95 | cost |
-|---|---:|---:|---:|---:|---:|
-| `08:51` bình thường | 7 | 150 | 889 | 50 | 0.0159 |
-| `08:52` sự cố | 13 | 2651 | 2651 | 50 | 0.0266 |
-
-p50 nhảy từ 150 ms lên 2651 ms, **error vẫn bằng 0**, `ttft_p95` không đổi. Nếu chỉ nhìn error rate thì
-sự cố này vô hình; và `ttft` bất biến là manh mối loại trừ ngay giả thuyết "model chậm".
-
-Một cái bẫy tôi gặp và ghi lại: vì log chứa cả hai pha, p95 nearest-rank của 20 mẫu (10 bình thường,
-10 sự cố) rơi vào **2651 ms**, tức **không vượt** ngưỡng 3000 ms của SLO. Trộn cửa sổ làm che mất sự
-vi phạm. Nên tôi lọc bằng ngưỡng 2000 ms — đúng nghĩa "chậm hơn baseline 10 lần" — thay vì bắt đầu từ
-con số SLO.
-
-**Log line và correlation ID liên quan.** 10/20 response vượt 2000 ms, ví dụ:
-
-```
-req-dbbb5aea  latency=2651ms  ttft=50ms  tokens=89/109
-req-52f1083b  latency=2651ms  ttft=50ms  tokens=41/133
+```bash
+python scripts/inject_incident.py                          # đọc config/challenge.json
+python scripts/load_test.py --challenge --concurrency 5
 ```
 
-**Trace ID và span gây ảnh hưởng.** Mở trace bằng chính `correlation_id` đó (nó cũng là key trong
-trace metadata, nên một định danh nối được log với trace):
+Evidence: `evidence/13-incident-investigation.png` + `evidence/13-incident-investigation.txt`, và
+dashboard từng pha `evidence/12-incident-dashboard-{healthy,incident,mitigated}.png`.
+
+**Khoảng thời gian điều tra.** File log cố ý chứa cả hai pha để nhìn thấy mốc chuyển trạng: `09:37:54`
+là traffic bình thường của feature `monitoring`, ngay sau đó là 5 request của challenge.
+
+**Triệu chứng từ metrics.**
+
+| Pha | n | p50 (ms) | p95 (ms) | ttft_p95 | error | alert |
+|---|---:|---:|---:|---:|---:|---|
+| A — bình thường | 5 | 151 | 151 | 50 | 0 | 0/4 bắn |
+| B — incident | 5 | 2651 | 2651 | 50 | 0 | **1/4 bắn** (`slow_answers`) |
+| C — sau mitigation | 5 | 150 | 151 | 50 | 0 | 0/4 bắn |
+
+`error` bằng 0 và `ttft_p95` không đổi: nếu chỉ nhìn error rate thì sự cố này vô hình, và `ttft` bất
+biến là manh mối loại trừ ngay giả thuyết "model chậm".
+
+**Một cái bẫy tôi gặp và ghi lại thay vì chỉnh số cho khớp.** Ở pha B, log chứa cả 5 request bình
+thường lẫn 5 request của incident. Với chỉ 10 mẫu, p95 nearest-rank rơi vào 2651 ms, **không vượt**
+ngưỡng 3000 ms cũ — nên nếu tôi chỉ nhìn SLO thì sẽ kết luận "chưa vi phạm". Tôi lọc bằng chính
+`latency_threshold_ms: 2000` mà challenge đưa cho, vì đó là ngưỡng *dành riêng cho bài này*, tách
+khỏi ngưỡng SLO.
+
+**Log line và correlation ID liên quan.** 5/10 response vượt 2000 ms, đều thuộc feature
+`monitoring`, mỗi session một ID:
+
+```
+req-e76a5eed  2651ms  ttft=50ms  session=k4-l3a-challenge-s05
+req-dfe12917  2652ms  ttft=50ms  session=k4-l3a-challenge-s03
+req-693c7ad0  2651ms  ttft=50ms  session=k4-l3a-challenge-s04
+req-c390a17d  2652ms  ttft=50ms  session=k4-l3a-challenge-s01
+req-a7c21966  2651ms  ttft=50ms  session=k4-l3a-challenge-s02
+```
+
+**Trace ID và span gây ảnh hưởng.** Mở trace bằng chính `correlation_id` đó (nó cũng là key trong trace
+metadata, nên một định danh nối được log với trace):
 
 | correlation_id | traceId | `retrieve-context` | `generate-response` |
 |---|---|---|---|
-| `req-dbbb5aea` | `057392136688d5f0ddab949dfb183cc9` | **2.500 s (94.3%)** | 0.151 s (5.7%) |
-| `req-52f1083b` | `b0e62dc7f8cf90f6044bae5ebc30a73b` | **2.500 s (94.3%)** | 0.150 s (5.7%) |
+| `req-c390a17d` | `0fc3ce216a6a83e01e8b169cf38bbd05` | **2.500 s (94.3%)** | 0.151 s (5.7%) |
+| `req-dfe12917` | `3a926f70da4c43172ed02e818f3f627f` | **2.500 s (94.3%)** | 0.151 s (5.7%) |
 
-Span chậm là `retrieve-context`; `generate-response` vẫn 0.15 s với `ttft=0.05s`, model và cost bình
-thường. Không có child observation thì trace chỉ có node `lab-agent-run` và tôi **không thể** phân
-biệt "RAG chậm" với "model chậm" — đây chính là lý do phần CP2 đáng giá.
+Span chậm là `retrieve-context`; `generate-response` vẫn 0.151 s với `ttft = 0.05 s`,
+`model = claude-sonnet-4-5`, cost bình thường. Ảnh waterfall:
+`evidence/07-trace-waterfall.png`. Không có child observation thì trace chỉ có node
+`lab-agent-run` và tôi **không thể** phân biệt "RAG chậm" với "model chậm" — đó là lý do phần CP2 đáng
+giá, và cũng là lý do tôi thêm span `resolve-prompt` ở phần sau.
 
-**Root cause.** `app/mock_rag.py::retrieve()` còn 2.5 s khi `STATE["rag_slow"]` bật, và toàn bộ thời
-gian đó nằm trong span `retrieve-context`. Root cause ở bước retrieval, không phải ở model và không
-phải ở prompt: trace ghi `prompt=day13-chat:1`, `prompt_source=langfuse`, đúng version với baseline, nên
-loại trừ được giả thuyết prompt.
+**Root cause.** `app/mock_rag.py::retrieve()` giữ request thêm 2.5 s khi `STATE["rag_slow"]` bật, và
+toàn bộ thời gian đó nằm trong span `retrieve-context`. Root cause ở bước retrieval — không phải ở
+model (`generate-response` bất biến, `ttft` bất biến) và không phải ở prompt: trace ghi
+`prompt = day13-chat:1`, `prompt_source = langfuse`, **đúng version baseline**, nên loại trừ được giả
+thuyết đổi prompt.
 
 **Fix action.** Tắt incident rồi đo lại trên cùng workload:
 `python scripts/inject_incident.py --scenario rag_slow --disable` → p50 về 150 ms, 0/4 alert bắn,
-dashboard về đúng baseline. Fix vĩnh lau dài hạn là đặt deadline cho retrieval và phục vụ fallback
-thay vì chờ.
+dashboard về đúng baseline (ảnh `12-incident-dashboard-mitigated.png`). Fix vĩnh lau dài hạn là đặt
+deadline cho retrieval và phục vụ fallback thay vì chờ.
 
-**Preventive measure — phát hiện thêm trong lúc điều tra.** Client quan sát thấy request chậm tới
-**14.2 s** trong khi log chỉ ghi **3.5 s**: tức con số mà SLO, dashboard và alert đánh giá thấp hơn thực
-tế **4.0 lần**. Nguyên nhân: handler `/chat` là `async def` nhưng gọi trực tiếp `agent.run()` blocking
-(vốn dùng `time.sleep`) trên event loop, nên các request xếp hàng nối tiếp nhau. Sửa bằng
-`await run_in_threadpool(agent.run, ...)`:
+**Preventive measure 1 — hàng đợi làm sai lệch mọi tín hiệu.** Handler `/chat` là `async def` nhưng
+gọi trực tiếp `agent.run()` blocking trên event loop, nên request xếp hàng nối tiếp nhau. Client quan
+sát thấy request chậm tới **14.2 s** trong khi log chỉ ghi **3.5 s**: con số mà SLO, dashboard và alert
+đánh giá thấp hơn thực tế **4.0 lần**. Sửa bằng `await run_in_threadpool(agent.run, ...)`:
 
 | | client median | client max | server max | server thấp hơn thực tế |
 |---|---:|---:|---:|---:|
 | Trước | 13266 ms | 14172 ms | 3503 ms | **4.0×** |
 | Sau | 2655 ms | 3494 ms | 3449 ms | **1.0×** |
 
-Quan trọng hơn tốc độ là **tỉ lệ**: sau khi sửa, con số ghi ra log và con số người dùng chịu đựng khớp
-nhau, nghĩa là SLO cuối cùng đo đúng thứ người dùng cảm nhận. Bằng chứng:
-`evidence/14-queueing-before-after.txt` (đo cả hai vế trên cùng workload bằng `git stash`).
+Quan trọng hơn tốc độ là **tỉ lệ**: sau khi sửa, con số ghi ra log và con số người dùng chịu đựng
+khớp nhau. Bằng chứng: `evidence/14-queueing-before-after.txt` (đo cả hai vế bằng `git stash`).
 
-Ba hệ quả tôi ghi lại trong `docs/alerts.md`: (1) đo latency ở biên chứ không chỉ trong tiến trình;
-(2) khi nghi ngờ nghẽn hàng đợi, so số client với số server; (3) `ttft_p95` bất biến là manh mối loại
-trừ "model chậm".
+**Preventive measure 2 — sửa nút thắt làm tắt chính alert.** Sau khi sửa hàng đợi, ngưỡng 3000 ms
+biến thành 19.9× baseline sạch và **không bắn** cho đúng incident này. Tôi hiệu chỉnh SLO và alert
+xuống 1000 ms (6.6× baseline), ghi lý do vào file config, và thêm test khoá ngưỡng vào incident thật.
+Đây là bài học lớn nhất của toàn bài: **ngưỡng được hiệu chỉnh trên một số đo bị nhiễm sẽ tự ngắt
+phòng thủ khi số đo đó trở lại sự thật.**
+
+**Preventive measure 3 — thời gian nằm ngoài mọi span.** `resolve_prompt` gọi Langfuse đồng bộ khi
+cache rỗng; lần đầu sau restart mất ~900 ms so với 150 ms khi ấm, và thời gian đó **không nằm trong
+span nào**. Tôi thêm span `resolve-prompt` và warm cache lúc khởi động: p50 sau restart về 151 ms
+thay vì 898 ms. Bằng chứng: `evidence/15-prompt-cache-cold-start.png`.
+
 ## 8. Giải thích và tự đánh giá
 
 **Một quyết định kỹ thuật quan trọng và lý do.** Chuyển việc scrub PII từ *từng call site* (gọi
@@ -341,9 +378,14 @@ thầm khi ai đó "dọn code".
    timestamp — ra `timeToFirstToken = -1790668033`. Chỉ thấy được khi tôi tự tải trace về đọc.
 2. Dashboard bỏ rơi chính dòng log mới nhất vì cửa sổ thời gian nửa mở (`< end`) trong khi neo vào
    `max(ts)`. Thấy được vì tôi in giá trị hiển thị cạnh bản tính lại bằng `jq`.
-3. Alert `slow_answers` **không bắn** đúng lúc sự cố xảy ra, vì log lúc đó trộn cả traffic bình
-   thường nên p95 rơi vào 2651 ms, dưới ngưỡng 3000 ms. Không phải bug code mà là bài học: trộn cửa
-   sổ làm che mất sự vi phạm, nên tôi ghi rõ thay vì chỉnh ngưỡng cho khớp.
+3. Alert `slow_answers` **không bắn** đúng lúc challenge xảy ra. Ở lần đầu, nguyên nhân là log
+   trộn cả traffic bình thường nên p95 rơi vào 2651 ms, dưới ngưỡng 3000 ms. Tôi không chỉnh ngưỡng
+   cho khớp mà ghi rõ cải bẫy trộn cửa sổ.
+4. Nguyên nhân sâu hơn, phát hiện khi chạy challenge **chính thức**: ngưỡng 3000 ms vốn đã được hiệu
+   chỉnh trên một baseline **bị nhiễm** (877 ms có chứa thời gian xếp hàng). Sau khi tôi sửa nút thắt
+   hàng đợi, baseline sạch còn 151 ms và ngưỡng cũ biến thành 19.9× headroom — **sửa nút thắt đã âm
+   thầm vô hiệu hóa chính alert đang canh nó.** Đây là lỗi của chính tôi trong bài của tôi, và là
+   thứ tôi ghi vào `config/slo.yaml` cùng một test khoá ngưỡng.
 
 **Cách tìm nguyên nhân và xử lý.** Đi đúng thứ tự: metrics cho triệu chứng và mốc thời gian → log cho
 `correlation_id` → trace cho span. Ở CP3, metrics cho biết p50 nhảy 150 → 2651 ms **trong khi error
@@ -367,20 +409,25 @@ dùng chờ lâu" thành con số có ngân sách, và `run_in_threadpool` chín
 phải làm. Rollback prompt là biện pháp rẻ nhất khi chất lượng đi xuống: đổi label là đổi hành vi, không
 cần deploy.
 
-**Điều quan trọng nhất đã học.** *Metric không nói dối, nhưng nó có thể đo sai thứ.* Ba ví dụ từ chính
-bài này: log bị scrub sai tầng nên "0 PII leak" ở baseline; cửa sổ trộn làm p95 không vi phạm; đo
-latency trong tiến trình nên thấp hơn thực tế 4×. Trong cả ba, số đều "đúng theo cách tính" và sai về
-quyết định. Vì vậy tôi ưu tiên: (1) scrub ở tầng sink chứ không ở call site; (2) mọi con số trong báo
-cáo đều có một cách tính lại độc lập bằng `jq`; (3) alert phải được bắn thật ít nhất một lần, nếu
-không thì đó chỉ là văn bản.
+**Điều quan trọng nhất đã học.** *Số đo không nói dối, nhưng nó có thể đo sai thứ — và ngưỡng của
+bạn có thể chết âm thầm.* Bốn ví dụ từ chính bài này: log bị scrub sai tầng nên "0 PII leak" ở
+baseline; cửa sổ trộn làm p95 không vi phạm; đo latency trong tiến trình nên thấp hơn thực tế 4×;
+và tệ nhất, **ngưỡng alert được hiệu chỉnh trên một baseline bị nhiễm nên tự ngắng phòng thủ ngay khi
+nhiễm được dọn sạch**. Trong cả bốn, số đều "đúng theo cách tính" và sai về quyết định.
+
+Vì vậy tôi rút ra bốn nguyên tắc và áp dụng ngay: (1) scrub ở tầng sink chứ không ở call site;
+(2) mọi con số trong báo cáo đều có một cách tính lại độc lập bằng `jq`; (3) **alert phải được bắn
+thật ít nhất một lần trên một sự cố thật**, nếu không thì đó chỉ là văn bản; (4) **hiệu chỉnh lại ngưỡng
+mỗi khi baseline đổi**, và coi việc alert ngừng bắn là tín hiệu phải kiểm tra lại ngưỡng chứ không
+phải tin tưởng mừng.
 
 **Hạn chế hoặc phần chưa hoàn thành.**
 
-- **Không có ảnh giao diện Langfuse.** Máy này không đăng nhập được vào Langfuse UI và không có
-  trình duyệt để chụp, nên các mục rubric yêu cầu ảnh (`07-trace-waterfall.png` chẳng hạn) chỉ có bản
-  text từ API. Nội dung waterfall đầy đủ, nhưng đây là thiếu sót thật và tôi nói rõ thay vì giả vờ.
-- **Chưa chạy challenge chính thức** vì `config/challenge.json` chưa được phát. Mục 7 là practice
-  scenario, được ghi rõ như vậy.
+- **Ảnh UI của Langfuse vẫn thiếu.** Tôi đã chụp được ảnh cho mọi mục bằng Playwright/Chromium,
+  gồm waterfall và trace list — nhưng chúng được **dựng từ API rồi chụp**, không phải ảnh chụp web
+  UI, vì UI cần đăng nhập tương tác và tôi không có mật khẩu (tôi không hỏi bạn dán mật khẩu vào
+  chat). Mọi giá trị đều do Langfuse trả về, nhưng nếu rubric bắt buộc ảnh UI thì đây là khoảng
+  trống thật và cần chụp lại khi đã đăng nhập.
 - `FakeLLM` không đọc prompt, nên v1 và v2 không thể so sánh chất lượng (rubric cũng không chấm điểm đó).
 - `app/metrics.py` vẫn là biến toàn cục trong bộ nhớ: sống lâu hơn một process thì sẽ mất, và
   percentile trên danh sách tăng dần sẽ tốn bộ nhớ. Đủ cho lab, chưa đủ cho production — đó là lý do
@@ -398,11 +445,14 @@ không thì đó chỉ là văn bản.
       cùng `correlation_id` xuất hiện ở cả ba tầng, dẫn tới span `retrieve-context` 2.500 s.
 - [x] Trace/prompt evidence thuộc project Langfuse cá nhân (`day13-k4-l3a-2A202602963`) và không
       lộ key/secret — evidence chỉ chứa trace ID, không có key.
-- [x] Repository chạy lại được theo README — `python -m pytest -q` 49 passed, `validate_logs.py`
+- [x] Repository chạy lại được theo README — `python -m pytest -q` 50 passed, `validate_logs.py`
       100/100, `validate_dashboard.py` 6/6, `evaluate_alerts.py` im lặng trên traffic bình thường.
 - [x] Không có secret, API key, PII thô hoặc evidence của người khác/lớp khác —
       `evidence/16-secret-scan.txt` quét cả working tree lẫn git history bằng chính giá trị key trong
       `.env`; kết quả `clean`. File evidence PII đã che giá trị để không trông giống rò rỉ.
 - [ ] **Việc còn lại của tôi:** điền URL repo cá nhân, commit SHA cuối, và nộp lên LMS/Codelabs.
-- [ ] **Còn thiếu:** ảnh giao diện Langfuse (xem mục 8) và challenge chính thức khi Lab Coach phát
-      `config/challenge.json`; khi có file đó thì chạy lại `scripts/investigate.py` và điền mục 7.
+- [x] **Challenge chính thức đã chạy** — `config/challenge.json` (cohort K4) đã được dùng đúng
+      như tài liệu: `inject_incident.py` không truyền `--scenario`, `load_test.py --challenge`.
+      Mục 7 có metric → log → trace → root cause, fix và 3 preventive measure.
+- [ ] **Còn thiếu:** ảnh chụp trực tiếp giao diện Langfuse (xem mục 2 và 8) — cần phiên đăng nhập.
+- [ ] **Việc của tôi:** điền URL repo cá nhân và commit SHA cuối, rồi nộp lên LMS/Codelabs.

@@ -1,0 +1,53 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<title>Langfuse traces - Day 13 lab</title><style>
+:root { color-scheme: light; }
+* { box-sizing: border-box; }
+body { margin: 0; padding: 26px 30px; background: #f5f7fa; color: #12181f;
+  font: 13px/1.5 -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+h1 { font-size: 19px; margin: 0 0 2px; }
+.sub { color: #5b6875; font-size: 12px; margin-bottom: 14px; }
+.banner { background: #fff8e6; border: 1px solid #f0d9a0; border-radius: 6px;
+  padding: 9px 12px; font-size: 12px; margin-bottom: 16px; color: #6b5316; }
+h2 { font-size: 14px; margin: 22px 0 8px; }
+table { border-collapse: collapse; width: 100%; background: #fff;
+  border: 1px solid #dde3ea; border-radius: 8px; overflow: hidden; }
+th { text-align: left; font-size: 10px; text-transform: uppercase; letter-spacing: .04em;
+  color: #6b7885; background: #f0f3f7; padding: 8px 10px; }
+td { padding: 7px 10px; border-top: 1px solid #eef1f5; font-variant-numeric: tabular-nums; }
+tr.affected td { background: #fff5f5; }
+.tag { display: inline-block; padding: 1px 7px; border-radius: 10px; color: #fff;
+  font-size: 10px; font-weight: 600; letter-spacing: .02em; }
+.wf { background: #fff; border: 1px solid #dde3ea; border-radius: 8px; padding: 14px 16px 10px; }
+.wfrow { display: flex; align-items: center; margin-bottom: 6px; }
+.wfname { width: 210px; font-size: 12px; }
+.wftrack { position: relative; height: 22px; flex: 1; background:
+  repeating-linear-gradient(90deg, #f4f6f9 0 1px, transparent 1px 100%) ;
+  background-size: 10% 100%; border-radius: 3px; }
+.wfbar { position: absolute; top: 3px; height: 16px; border-radius: 3px; }
+.wfms { width: 78px; text-align: right; font-size: 11px; color: #3a4652;
+  font-variant-numeric: tabular-nums; }
+.axis { display: flex; justify-content: space-between; margin-left: 210px; padding-right: 84px;
+  color: #8a96a3; font-size: 10px; border-top: 1px solid #eef1f5; padding-top: 4px; }
+.detail { background: #fff; border: 1px solid #dde3ea; border-radius: 8px; padding: 14px 16px; }
+pre { background: #f7f9fb; border: 1px solid #e6eaf0; border-radius: 6px; padding: 10px 12px;
+  font-size: 11px; margin: 6px 0 0; white-space: pre-wrap; word-break: break-word;
+  max-height: 250px; overflow-y: auto; }
+.kv { display: grid; grid-template-columns: 190px 1fr; gap: 2px 12px; font-size: 12px; }
+.kv div:nth-child(odd) { color: #6b7885; }
+footer { margin-top: 18px; color: #6b7885; font-size: 11px; }
+code { background: #eceff3; padding: 1px 4px; border-radius: 3px; }
+</style></head><body>
+<h1>Langfuse trace list and waterfall</h1>
+<div class="sub">project day13-k4-l3a-2A202602963 &middot; source
+  GET /api/public/v2/observations &middot; window last 20 min
+  &middot; generated 2026-09-29 09:44:58 UTC</div>
+<div class="banner">Rendered from the Langfuse public API, not from a UI screenshot:
+  the Langfuse web interface needs an interactive sign-in that cannot be scripted
+  from a terminal without someone's credentials. Every value below is the value
+  Langfuse returned. challenge day13-k4-l3a-monitoring-llmops-v1 &middot; affected feature requests above 2000 ms are highlighted</div>
+<h2>Trace list &mdash; 22 traces, 5 slower than 2000 ms</h2><table><tr><th>correlation_id</th><th>root type</th><th>start</th><th>total</th><th>retrieval</th><th>ttft</th><th>tokens in/out</th><th>cost</th><th>prompt</th><th>trace name</th></tr><tr class=''><td><code>req-4875c4ca</code></td><td><span class='tag' style='background:#334e68'>AGENT</span></td><td>09:33:48</td><td>152 ms</td><td>0.000 s</td><td>0.05 s</td><td>82/177</td><td>$0.002901</td><td>day13-chat:1 (langfuse)</td><td>day13-agent-request</td></tr><tr class=''><td><code>req-50bced92</code></td><td><span class='tag' style='background:#334e68'>AGENT</span></td><td>09:37:54</td><td>151 ms</td><td>0.000 s</td><td>0.05 s</td><td>91/139</td><td>$0.002358</td><td>day13-chat:1 (langfuse)</td><td>day13-agent-request</td></tr><tr class=''><td><code>req-df36b866</code></td><td><span class='tag' style='background:#334e68'>AGENT</span></td><td>09:37:54</td><td>151 ms</td><td>0.000 s</td><td>0.05 s</td><td>92/139</td><td>$0.002361</td><td>day13-chat:1 (langfuse)</td><td>day13-agent-request</td></tr><tr class=''><td><code>req-606f7aa0</code></td><td><span class='tag' style='background:#334e68'>AGENT</span></td><td>09:37:54</td><td>151 ms</td><td>0.000 s</td><td>0.05 s</td><td>91/144</td><td>$0.002433</td><td>day13-chat:1 (langfuse)</td><td>day13-agent-request</td></tr><tr class=''><td><code>req-d75fa7a3</code></td><td><span class='tag' style='background:#334e68'>AGENT</span></td><td>09:37:54</td><td>151 ms</td><td>0.001 s</td><td>0.05 s</td><td>91/92</td><td>$0.001653</td><td>day13-chat:1 (langfuse)</td><td>day13-agent-request</td></tr><tr class=''><td><code>req-279942ec</code></td><td><span class='tag' style='background:#334e68'>AGENT</span></td><td>09:37:54</td><td>151 ms</td><td>0.001 s</td><td>0.05 s</td><td>90/83</td><td>$0.001515</td><td>day13-chat:1 (langfuse)</td><td>day13-agent-request</td></tr><tr class='affected'><td><code>req-e76a5eed</code></td><td><span class='tag' style='background:#334e68'>AGENT</span></td><td>09:37:54</td><td>2651 ms</td><td>2.500 s</td><td>0.05 s</td><td>90/137</td><td>$0.002325</td><td>day13-chat:1 (langfuse)</td><td>day13-agent-request</td></tr><tr class='affected'><td><code>req-dfe12917</code></td><td><span class='tag' style='background:#334e68'>AGENT</span></td><td>09:37:54</td><td>2652 ms</td><td>2.500 s</td><td>0.05 s</td><td>91/122</td><td>$0.002103</td><td>day13-chat:1 (langfuse)</td><td>day13-agent-request</td></tr><tr class='affected'><td><code>req-693c7ad0</code></td><td><span class='tag' style='background:#334e68'>AGENT</span></td><td>09:37:54</td><td>2651 ms</td><td>2.500 s</td><td>0.05 s</td><td>92/137</td><td>$0.002331</td><td>day13-chat:1 (langfuse)</td><td>day13-agent-request</td></tr><tr class='affected'><td><code>req-c390a17d</code></td><td><span class='tag' style='background:#334e68'>AGENT</span></td><td>09:37:54</td><td>2652 ms</td><td>2.500 s</td><td>0.05 s</td><td>91/156</td><td>$0.002613</td><td>day13-chat:1 (langfuse)</td><td>day13-agent-request</td></tr><tr class='affected'><td><code>req-a7c21966</code></td><td><span class='tag' style='background:#334e68'>AGENT</span></td><td>09:37:54</td><td>2651 ms</td><td>2.500 s</td><td>0.05 s</td><td>91/142</td><td>$0.002403</td><td>day13-chat:1 (langfuse)</td><td>day13-agent-request</td></tr><tr class=''><td><code>req-8411ca6d</code></td><td><span class='tag' style='background:#334e68'>AGENT</span></td><td>09:38:23</td><td>152 ms</td><td>0.000 s</td><td>0.05 s</td><td>92/156</td><td>$0.002616</td><td>day13-chat:1 (langfuse)</td><td>day13-agent-request</td></tr><tr class=''><td><code>req-0bfdeaec</code></td><td><span class='tag' style='background:#334e68'>AGENT</span></td><td>09:38:23</td><td>151 ms</td><td>0.000 s</td><td>0.05 s</td><td>91/80</td><td>$0.001473</td><td>day13-chat:1 (langfuse)</td><td>day13-agent-request</td></tr><tr class=''><td><code>req-d9199bb6</code></td><td><span class='tag' style='background:#334e68'>AGENT</span></td><td>09:38:23</td><td>151 ms</td><td>0.000 s</td><td>0.05 s</td><td>91/100</td><td>$0.001773</td><td>day13-chat:1 (langfuse)</td><td>day13-agent-request</td></tr><tr class=''><td><code>req-1cc7ada6</code></td><td><span class='tag' style='background:#334e68'>AGENT</span></td><td>09:38:23</td><td>151 ms</td><td>0.000 s</td><td>0.05 s</td><td>91/84</td><td>$0.001533</td><td>day13-chat:1 (langfuse)</td><td>day13-agent-request</td></tr><tr class=''><td><code>req-7832bf8c</code></td><td><span class='tag' style='background:#334e68'>AGENT</span></td><td>09:38:23</td><td>151 ms</td><td>0.000 s</td><td>0.05 s</td><td>90/111</td><td>$0.001935</td><td>day13-chat:1 (langfuse)</td><td>day13-agent-request</td></tr><tr class=''><td><code>req-1b7877ab</code></td><td><span class='tag' style='background:#334e68'>AGENT</span></td><td>09:38:25</td><td>1007 ms</td><td>0.000 s</td><td>0.05 s</td><td>82/167</td><td>$0.002751</td><td>day13-chat:1 (langfuse)</td><td>day13-agent-request</td></tr><tr class=''><td><code>req-4a4b91a2</code></td><td><span class='tag' style='background:#334e68'>AGENT</span></td><td>09:38:26</td><td>152 ms</td><td>0.001 s</td><td>0.05 s</td><td>82/146</td><td>$0.002436</td><td>day13-chat:1 (langfuse)</td><td>day13-agent-request</td></tr><tr class=''><td><code>upstream-42</code></td><td><span class='tag' style='background:#334e68'>AGENT</span></td><td>09:38:26</td><td>153 ms</td><td>0.001 s</td><td>0.05 s</td><td>82/160</td><td>$0.002646</td><td>day13-chat:1 (langfuse)</td><td>day13-agent-request</td></tr><tr class=''><td><code>req-2273393a</code></td><td><span class='tag' style='background:#334e68'>AGENT</span></td><td>09:38:26</td><td>152 ms</td><td>0.000 s</td><td>0.05 s</td><td>82/168</td><td>$0.002766</td><td>day13-chat:1 (langfuse)</td><td>day13-agent-request</td></tr><tr class=''><td><code>req-58d2b73a</code></td><td><span class='tag' style='background:#334e68'>AGENT</span></td><td>09:38:26</td><td>151 ms</td><td>0.000 s</td><td>0.05 s</td><td>82/105</td><td>$0.001821</td><td>day13-chat:1 (langfuse)</td><td>day13-agent-request</td></tr><tr class=''><td><code>req-f4fa6480</code></td><td><span class='tag' style='background:#334e68'>AGENT</span></td><td>09:38:27</td><td>151 ms</td><td>0.000 s</td><td>0.05 s</td><td>82/149</td><td>$0.002481</td><td>day13-chat:1 (langfuse)</td><td>day13-agent-request</td></tr></table>
+
+<footer>Span colours: agent = dark, retriever = blue, generation = purple,
+  prompt lookup = grey. Bars are positioned and sized from each observation's
+  own start time and latency.</footer>
+</body></html>

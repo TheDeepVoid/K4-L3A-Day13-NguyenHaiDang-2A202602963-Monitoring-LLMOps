@@ -12,8 +12,8 @@ HỢP LỆ: 6/6 panel có trong dashboard contract.
   Latency percentiles and TTFT
     id=latency unit=ms events=response_sent threshold: p95 lte 3000 source=data/logs.jsonl
     latency_p50              = 150        [ok]
-    latency_p95              = 877        [ok]
-    latency_p99              = 877        [ok]
+    latency_p95              = 152        [ok]
+    latency_p99              = 152        [ok]
     ttft_p95                 = 50         [ok]
 
   Request traffic
@@ -28,13 +28,13 @@ HỢP LỆ: 6/6 panel có trong dashboard contract.
 
   Cost over time
     id=cost unit=usd events=response_sent threshold: total lte 2.5 source=data/logs.jsonl
-    total                    = 0.0242     [ok]
+    total                    = 0.0233     [ok]
 
   Input and output tokens
     id=tokens unit=tokens events=response_sent threshold: sum_by_field lte 50000 source=data/logs.jsonl
     tokens_in                = 900        [ok]
-    tokens_out               = 1435       [ok]
-    total                    = 2335       [ok]
+    tokens_out               = 1372       [ok]
+    total                    = 2272       [ok]
 
   Quality proxy
     id=quality unit=score_0_to_1 events=response_sent threshold: mean gte 0.75 source=data/logs.jsonl
@@ -42,18 +42,18 @@ HỢP LỆ: 6/6 panel có trong dashboard contract.
     scored                   = 10         [-]
 
 ## 3) Panel values recomputed from data/logs.jsonl with jq (independent of the generator)
-"  latency   n=10  p50=150  p95=877  p99=877"
+"  latency   n=10  p50=150  p95=152  p99=152"
 "  ttft      p95=50"
 "  traffic   request_received=10  request_failed=0"
-"  cost      total_cost_usd=0.024225"
-"  tokens    tokens_in=900  tokens_out=1435"
+"  cost      total_cost_usd=0.023280000000000002"
+"  tokens    tokens_in=900  tokens_out=1372"
 "  quality   mean=0.88"
 "  retrieval tool_success_rate_pct=100"
 
 ## 4) Live /metrics from the same workload (in-process counters, cross-check)
-{"traffic":10,"latency_p50":150.0,"latency_p95":877.0,"latency_p99":877.0,"ttft_p95":50.0,"avg_cost_usd":0.0024,"total_cost_usd":0.0242,"tokens_in_total":900,"tokens_out_total":1435,"error_breakdown":{},"quality_avg":0.88}
+{"traffic":10,"latency_p50":150.0,"latency_p95":152.0,"latency_p99":152.0,"ttft_p95":50.0,"avg_cost_usd":0.0023,"total_cost_usd":0.0233,"tokens_in_total":900,"tokens_out_total":1372,"error_breakdown":{},"quality_avg":0.88}
 
 ## 5) python -m pytest -q (tests/test_dashboard_builder.py covers the maths, the
 ##    threshold breach colouring, the empty-log case and the contract guard)
 ......                                                                   [100%]
-6 passed in 0.29s
+6 passed in 0.30s

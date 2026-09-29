@@ -7,15 +7,15 @@
 
 --- SLO summary as configured ---
   primary   fast_successful_requests  target 99.5%  error budget 0.5%  window 28d
-            good  : event == "response_sent" and latency_ms <= 3000
+            good  : event == "response_sent" and latency_ms <= 1000
             total : event == "request_received"
   secondary retrieval_available  target 99.0%  budget 1.0%  window 28d
   secondary daily_token_cost  target 95.0%  budget 5.0%  window 30d
   budget    error_budget_percent = 100 - target_percent  -> 0.5% = 2016 bad requests per 28d
-  guardrails {'error_rate_pct_max': 2, 'latency_p95_ms_max': 3000, 'ttft_p95_ms_max': 500, 'daily_cost_usd_max': 2.5, 'quality_score_avg_min': 0.75, 'retrieval_success_rate_pct_min': 90}
+  guardrails {'error_rate_pct_max': 2, 'latency_p95_ms_max': 1000, 'ttft_p95_ms_max': 500, 'daily_cost_usd_max': 2.5, 'quality_score_avg_min': 0.75, 'retrieval_success_rate_pct_min': 90}
 
 --- alert rules as configured ---
-  slow_answers           high      symptom-based  latency_p95_ms > 3000 for 10 minutes (window 10m)  slack=#day13-oncall  owner=backend-oncall  slo=fast_successful_requests
+  slow_answers           high      symptom-based  latency_p95_ms > 1000 for 10 minutes (window 10m)  slack=#day13-oncall  owner=backend-oncall  slo=fast_successful_requests
   answers_failing        critical  symptom-based  error_rate_pct > 2 for 5 minutes (window 5m)  slack=#day13-oncall  owner=backend-oncall  slo=fast_successful_requests
   retrieval_quality_drop medium    symptom-based  retrieval_success_rate_pct < 90 for 15 minutes (window 15m)  slack=#day13-llm-platform  owner=ml-platform  slo=retrieval_available
   token_cost_runaway     medium    symptom-based  cost_per_minute_usd > 0.05 for 15 minutes (window 15m)  slack=#day13-llm-platform  owner=ml-platform  slo=daily_token_cost
@@ -25,18 +25,18 @@
 ############################################################
 
 --- metrics (what the operator sees first) ---
-{"traffic":10,"latency_p50":150.0,"latency_p95":923.0,"latency_p99":923.0,"ttft_p95":50.0,"avg_cost_usd":0.0023,"total_cost_usd":0.0228,"tokens_in_total":900,"tokens_out_total":1342,"error_breakdown":{},"quality_avg":0.88}
+{"traffic":10,"latency_p50":150.0,"latency_p95":151.0,"latency_p99":151.0,"ttft_p95":50.0,"avg_cost_usd":0.0024,"total_cost_usd":0.0238,"tokens_in_total":900,"tokens_out_total":1408,"error_breakdown":{},"quality_avg":0.88}
 
 --- alert evaluation (python scripts/evaluate_alerts.py) ---
 alert rules: config/alert_rules.yaml
-log records in file: 21
+log records in file: 22
 
 alert                 state    signal                           value  rule               n  owner
 --------------------------------------------------------------------------------------------------
-slow_answers          OK       latency_p95_ms                     923  > 3000            21  backend-oncall
-answers_failing       OK       error_rate_pct                       0  > 2               21  backend-oncall
-retrieval_quality_dropOK       retrieval_success_rate_pct         100  < 90              21  ml-platform
-token_cost_runaway    OK       cost_per_minute_usd             0.0228  > 0.05            21  ml-platform
+slow_answers          OK       latency_p95_ms                     151  > 1000            22  backend-oncall
+answers_failing       OK       error_rate_pct                       0  > 2               22  backend-oncall
+retrieval_quality_dropOK       retrieval_success_rate_pct         100  < 90              22  ml-platform
+token_cost_runaway    OK       cost_per_minute_usd             0.0238  > 0.05            22  ml-platform
 
 0 of 4 alerts firing
 
@@ -48,18 +48,18 @@ token_cost_runaway    OK       cost_per_minute_usd             0.0228  > 0.05   
 ############################################################
 
 --- metrics (what the operator sees first) ---
-{"traffic":10,"latency_p50":2651.0,"latency_p95":3361.0,"latency_p99":3361.0,"ttft_p95":50.0,"avg_cost_usd":0.0021,"total_cost_usd":0.0214,"tokens_in_total":900,"tokens_out_total":1245,"error_breakdown":{},"quality_avg":0.88}
+{"traffic":10,"latency_p50":2651.0,"latency_p95":2651.0,"latency_p99":2651.0,"ttft_p95":50.0,"avg_cost_usd":0.0023,"total_cost_usd":0.0227,"tokens_in_total":900,"tokens_out_total":1334,"error_breakdown":{},"quality_avg":0.88}
 
 --- alert evaluation (python scripts/evaluate_alerts.py) ---
 alert rules: config/alert_rules.yaml
-log records in file: 22
+log records in file: 23
 
 alert                 state    signal                           value  rule               n  owner
 --------------------------------------------------------------------------------------------------
-slow_answers          FIRING   latency_p95_ms                    3361  > 3000            22  backend-oncall
-answers_failing       OK       error_rate_pct                       0  > 2               22  backend-oncall
-retrieval_quality_dropOK       retrieval_success_rate_pct         100  < 90              22  ml-platform
-token_cost_runaway    OK       cost_per_minute_usd             0.0214  > 0.05            22  ml-platform
+slow_answers          FIRING   latency_p95_ms                    2651  > 1000            23  backend-oncall
+answers_failing       OK       error_rate_pct                       0  > 2               23  backend-oncall
+retrieval_quality_dropOK       retrieval_success_rate_pct         100  < 90              23  ml-platform
+token_cost_runaway    OK       cost_per_minute_usd             0.0227  > 0.05            23  ml-platform
 
   slow_answers -> Slack #day13-oncall (backend-oncall), runbook docs/alerts.md#alert-1
 
@@ -77,14 +77,14 @@ token_cost_runaway    OK       cost_per_minute_usd             0.0214  > 0.05   
 
 --- alert evaluation (python scripts/evaluate_alerts.py) ---
 alert rules: config/alert_rules.yaml
-log records in file: 22
+log records in file: 23
 
 alert                 state    signal                           value  rule               n  owner
 --------------------------------------------------------------------------------------------------
-slow_answers          OK       latency_p95_ms                       -  > 3000            22  backend-oncall
-answers_failing       FIRING   error_rate_pct                     100  > 2               22  backend-oncall
-retrieval_quality_dropFIRING   retrieval_success_rate_pct           0  < 90              22  ml-platform
-token_cost_runaway    OK       cost_per_minute_usd                  -  > 0.05            22  ml-platform
+slow_answers          OK       latency_p95_ms                       -  > 1000            23  backend-oncall
+answers_failing       FIRING   error_rate_pct                     100  > 2               23  backend-oncall
+retrieval_quality_dropFIRING   retrieval_success_rate_pct           0  < 90              23  ml-platform
+token_cost_runaway    OK       cost_per_minute_usd                  -  > 0.05            23  ml-platform
 
   answers_failing -> Slack #day13-oncall (backend-oncall), runbook docs/alerts.md#alert-2
     error breakdown in window: {'RuntimeError': 10}
@@ -102,18 +102,18 @@ token_cost_runaway    OK       cost_per_minute_usd                  -  > 0.05   
 ############################################################
 
 --- metrics (what the operator sees first) ---
-{"traffic":10,"latency_p50":150.0,"latency_p95":920.0,"latency_p99":920.0,"ttft_p95":50.0,"avg_cost_usd":0.0087,"total_cost_usd":0.0874,"tokens_in_total":900,"tokens_out_total":5644,"error_breakdown":{},"quality_avg":0.88}
+{"traffic":10,"latency_p50":151.0,"latency_p95":151.0,"latency_p99":151.0,"ttft_p95":50.0,"avg_cost_usd":0.0075,"total_cost_usd":0.075,"tokens_in_total":900,"tokens_out_total":4820,"error_breakdown":{},"quality_avg":0.88}
 
 --- alert evaluation (python scripts/evaluate_alerts.py) ---
 alert rules: config/alert_rules.yaml
-log records in file: 22
+log records in file: 23
 
 alert                 state    signal                           value  rule               n  owner
 --------------------------------------------------------------------------------------------------
-slow_answers          OK       latency_p95_ms                     920  > 3000            22  backend-oncall
-answers_failing       OK       error_rate_pct                       0  > 2               22  backend-oncall
-retrieval_quality_dropOK       retrieval_success_rate_pct         100  < 90              22  ml-platform
-token_cost_runaway    FIRING   cost_per_minute_usd             0.0874  > 0.05            22  ml-platform
+slow_answers          OK       latency_p95_ms                     151  > 1000            23  backend-oncall
+answers_failing       OK       error_rate_pct                       0  > 2               23  backend-oncall
+retrieval_quality_dropOK       retrieval_success_rate_pct         100  < 90              23  ml-platform
+token_cost_runaway    FIRING   cost_per_minute_usd              0.075  > 0.05            23  ml-platform
 
   token_cost_runaway -> Slack #day13-llm-platform (ml-platform), runbook docs/alerts.md#alert-4
 
@@ -128,5 +128,5 @@ token_cost_runaway    FIRING   cost_per_minute_usd             0.0874  > 0.05   
 200 {'ok': True, 'incidents': {'rag_slow': False, 'tool_fail': False, 'cost_spike': False}}
 
 --- tests covering the alert rules (tests/test_alert_rules.py) ---
-......                                                                   [100%]
-6 passed in 0.24s
+.......                                                                  [100%]
+7 passed in 0.28s
