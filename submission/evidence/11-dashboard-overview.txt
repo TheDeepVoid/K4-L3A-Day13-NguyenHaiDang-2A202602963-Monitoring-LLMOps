@@ -1,0 +1,59 @@
+# CP2c - DASHBOARD RUNTIME EVIDENCE
+# source of truth : data/logs.jsonl
+# contract        : config/dashboard.yaml   (6 panels, read by the generator, not hard-coded)
+# regenerate      : python scripts/build_dashboard.py
+# runtime artifact: submission/evidence/11-dashboard-runtime.html  (self-contained, opens offline)
+# workload        : python scripts/load_test.py --concurrency 5  -> 10 requests
+
+## 1) Contract validator
+HỢP LỆ: 6/6 panel có trong dashboard contract.
+
+## 2) The six rendered panels, as displayed
+  Latency percentiles and TTFT
+    id=latency unit=ms events=response_sent threshold: p95 lte 3000 source=data/logs.jsonl
+    latency_p50              = 150        [ok]
+    latency_p95              = 877        [ok]
+    latency_p99              = 877        [ok]
+    ttft_p95                 = 50         [ok]
+
+  Request traffic
+    id=traffic unit=requests/minute events=request_received threshold: rate_per_minute gte 1 source=data/logs.jsonl
+    rate_per_minute          = 10.0       [ok]
+    count                    = 10         [-]
+
+  Error rate and retrieval success
+    id=errors unit=percent events=request_received,request_failed threshold: error_rate_pct lte 2 source=data/logs.jsonl
+    error_rate_pct           = 0.0        [ok]
+    tool_success_rate_pct    = 100.0      [ok]
+
+  Cost over time
+    id=cost unit=usd events=response_sent threshold: total lte 2.5 source=data/logs.jsonl
+    total                    = 0.0242     [ok]
+
+  Input and output tokens
+    id=tokens unit=tokens events=response_sent threshold: sum_by_field lte 50000 source=data/logs.jsonl
+    tokens_in                = 900        [ok]
+    tokens_out               = 1435       [ok]
+    total                    = 2335       [ok]
+
+  Quality proxy
+    id=quality unit=score_0_to_1 events=response_sent threshold: mean gte 0.75 source=data/logs.jsonl
+    mean                     = 0.88       [ok]
+    scored                   = 10         [-]
+
+## 3) Panel values recomputed from data/logs.jsonl with jq (independent of the generator)
+"  latency   n=10  p50=150  p95=877  p99=877"
+"  ttft      p95=50"
+"  traffic   request_received=10  request_failed=0"
+"  cost      total_cost_usd=0.024225"
+"  tokens    tokens_in=900  tokens_out=1435"
+"  quality   mean=0.88"
+"  retrieval tool_success_rate_pct=100"
+
+## 4) Live /metrics from the same workload (in-process counters, cross-check)
+{"traffic":10,"latency_p50":150.0,"latency_p95":877.0,"latency_p99":877.0,"ttft_p95":50.0,"avg_cost_usd":0.0024,"total_cost_usd":0.0242,"tokens_in_total":900,"tokens_out_total":1435,"error_breakdown":{},"quality_avg":0.88}
+
+## 5) python -m pytest -q (tests/test_dashboard_builder.py covers the maths, the
+##    threshold breach colouring, the empty-log case and the contract guard)
+......                                                                   [100%]
+6 passed in 0.29s
