@@ -3,7 +3,7 @@
 
 ## python -m pytest -q
 ..................................................                       [100%]
-50 passed in 3.38s
+50 passed in 3.51s
 
 ## python scripts/validate_logs.py
 --- Lab Verification Results ---
@@ -33,7 +33,7 @@ alert                 state    signal                           value  rule     
 slow_answers          OK       latency_p95_ms                     151  > 1000            22  backend-oncall
 answers_failing       OK       error_rate_pct                       0  > 2               22  backend-oncall
 retrieval_quality_dropOK       retrieval_success_rate_pct         100  < 90              22  ml-platform
-token_cost_runaway    OK       cost_per_minute_usd             0.0218  > 0.05            22  ml-platform
+token_cost_runaway    OK       cost_per_minute_usd             0.0212  > 0.05            22  ml-platform
 
 0 of 4 alerts firing
 
@@ -44,10 +44,10 @@ token_cost_runaway    OK       cost_per_minute_usd             0.0218  > 0.05   
   "latency_p95": 151.0,
   "latency_p99": 151.0,
   "ttft_p95": 50.0,
-  "avg_cost_usd": 0.0022,
-  "total_cost_usd": 0.0218,
+  "avg_cost_usd": 0.0021,
+  "total_cost_usd": 0.0212,
   "tokens_in_total": 900,
-  "tokens_out_total": 1276,
+  "tokens_out_total": 1233,
   "error_breakdown": {},
   "quality_avg": 0.88
 }
@@ -57,19 +57,19 @@ token_cost_runaway    OK       cost_per_minute_usd             0.0218  > 0.05   
 "  ttft_p95=50"
 "  traffic received=10 failed=0"
 "  retrieval success=10/10"
-"  cost total=0.021840000000000002  tokens=900/1276  quality mean=0.88"
+"  cost total=0.021195  tokens=900/1233  quality mean=0.88"
 
 ## raw PII scan over the whole log file (must be 0)
-  $ grep -cE 'vinuni\.edu\.vn|001202012345|4111 1111|C1234567|0901234567' data/logs.jsonl
+  $ grep -cE '[A-Za-z0-9._-]+@[A-Za-z0-9.-]+|[0-9]{4}[ -][0-9]{4}[ -][0-9]{4}[ -][0-9]{4}|[0-9]{12}|C[0-9]{7}|0[0-9]{2}[ .-]?[0-9]{3}[ .-]?[0-9]{4}' data/logs.jsonl
 0
 
 ## Langfuse: traces produced in this session (Observations API v2)
-  distinct traces            : 268
+  distinct traces            : 257
   observations               : 1000
   observation types          : ['AGENT', 'GENERATION', 'RETRIEVER', 'SPAN']
-  root observations          : 268
-  generations                : 247
-  generations with prompt link: 247
+  root observations          : 256
+  generations                : 244
+  generations with prompt link: 244
   prompt versions linked     : ['1']
-  every trace has a GENERATION: 247/268
+  every trace has a GENERATION: 244/257
   raw PII found in traces    : none

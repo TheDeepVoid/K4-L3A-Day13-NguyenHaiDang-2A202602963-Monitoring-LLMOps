@@ -7,8 +7,9 @@
 - **Họ và tên:** Nguyễn Hải Đăng
 - **MSSV:** 2A202602963
 - **Lớp:** L3A
-- **Repository URL:** _(điền URL repo cá nhân khi push)_
-- **Commit SHA cuối:** _(ghi lại sau CP4)_
+- **Repository URL:** <https://github.com/TheDeepVoid/K4-L3A-Day13-NguyenHaiDang-2A202602963-Monitoring-LLMOps>
+- **Commit SHA cuối:** `__COMMIT_SHA__` — commit chứa toàn bộ bài nộp. Xem mục 9 về commit
+  ghi lại chính con số này.
 - **Challenge ID:** `day13-k4-l3a-monitoring-llmops-v1`
 - **Tên project Langfuse cá nhân:** `day13-k4-l3a-2A202602963`
 
@@ -24,6 +25,7 @@ của tôi mà không phải tin vào ảnh. Ảnh chụp bằng Playwright/Chro
 | Log validator | `evidence/02-log-validator.png` | `evidence/01-log-validator-final.txt` |
 | Dashboard validator + đối chiếu jq | `evidence/03-dashboard-validator.png` | `evidence/11-dashboard-overview.txt` |
 | Dashboard runtime | `evidence/11-dashboard-overview.png` | `evidence/11-dashboard-runtime.html` |
+| Structured log | `evidence/04-structured-log.png` | `evidence/04-structured-log.txt` |
 | PII redaction | `evidence/05-pii-redaction.png` | `evidence/02-pii-redaction.txt` |
 | **Trace list (UI thật)** | `evidence/06-trace-list.png` | `evidence/06-trace-list.html` + `06-trace-list-api.png` |
 | **Trace waterfall (UI thật)** | `evidence/07-trace-waterfall.png`, `07-trace-waterfall-2.png` | `evidence/07-trace-waterfall.html` + `07-trace-waterfall-api.png` |
@@ -476,6 +478,11 @@ trong git object cục bộ trong một khoảng thời gian, và nguyên tắc 
 
 ## 9. Checklist trước khi nộp
 
+> **Về `Commit SHA cuối` ở mục 1:** một file không thể chứa SHA của chính commit chứa nó — mọi
+> thay đổi sau khi chèn số đó đều làm SHA đổi. Nên mục 1 ghi SHA của commit chứa toàn bộ bài
+> nộp, còn commit ghi lại chính dòng số đó là commit con ngay sau đó. Khi nộp, dùng
+> `git rev-parse HEAD` của nhánh đã push.
+
 - [x] Kết quả và evidence thuộc commit SHA cuối — mỗi checkpoint là một commit riêng
       (`git log --oneline`), evidence commit kèm.
 - [x] Tất cả ảnh/output mở được bằng đường dẫn tương đối — mục 2 liệt kê từng file; các bản
@@ -492,10 +499,14 @@ trong git object cục bộ trong một khoảng thời gian, và nguyên tắc 
       giống rò rỉ.
 - [x] **Sự cố rò rỉ do công cụ kiểm tra gây ra đã được xử lý đầy đủ** (mục 8): script đã sửa để mask,
       key chưa từng được push, history đã được dọn sạch và xác minh lại bằng script.
-- [ ] **Việc còn lại của tôi:** điền URL repo cá nhân, commit SHA cuối, và nộp lên LMS/Codelabs.
 - [x] **Challenge chính thức đã chạy** — `config/challenge.json` (cohort K4) đã được dùng đúng
       như tài liệu: `inject_incident.py` không truyền `--scenario`, `load_test.py --challenge`.
       Mục 7 có metric → log → trace → root cause, fix và 3 preventive measure.
-- [ ] **Còn thiếu:** ảnh chụp trực tiếp giao diện Langfuse (xem mục 2 và 8) — cần phiên đăng nhập.
+- [x] **Ảnh giao diện Langfuse thật** — `06-trace-list.png`, `07-trace-waterfall.png`,
+      `07-trace-waterfall-2.png`, `08-trace-metadata.png`, `09-prompt-versions.png`,
+      `10-prompt-rollback.png`, `18-ui-sessions.png`: chụp trực tiếp UI bằng Playwright + Brave,
+      có tên project cá nhân, đã che mọi chuỗi `pk-lf-`/`sk-lf-`. Bản `*-api.png` được sinh từ
+      API để người chấm tự kiểm chứng lại bằng key.
 - [x] **Key đã rotate** và key cũ đã trả 401; toàn bộ evidence được tạo lại bằng key mới.
-- [ ] **Việc còn lại của tôi:** điền URL repo cá nhân và commit SHA cuối, rồi nộp lên LMS/Codelabs.
+- [x] **Không có ảnh chụp trang API Keys** — không mở `/settings/api-keys` ở bất kỳ ảnh nào.
+- [ ] **Việc còn lại của tôi:** nộp URL repo + commit SHA ở mục 1 lên LMS/Codelabs.

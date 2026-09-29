@@ -126,6 +126,17 @@ def maybe_json(value):
     return value
 
 
+
+def round_floats(value, places: int = 6):
+    """Round cost floats: the API returns 0.002657999999, which reads as noise."""
+    if isinstance(value, float):
+        return round(value, places)
+    if isinstance(value, dict):
+        return {k: round_floats(v, places) for k, v in value.items()}
+    if isinstance(value, list):
+        return [round_floats(v, places) for v in value]
+    return value
+
 def parse_ts(value: str) -> datetime:
     return datetime.fromisoformat(value.replace("Z", "+00:00"))
 
@@ -256,7 +267,7 @@ def main() -> int:
                 f"<div>model</div><div>{html.escape(str(gen.get('model')))}</div>"
                 f"<div>model_parameters</div><div>{html.escape(json.dumps(gen.get('modelParameters') or {}))}</div>"
                 f"<div>usage_details</div><div>{html.escape(json.dumps(maybe_json(gen.get('usageDetails')) or {}))}</div>"
-                f"<div>cost_details</div><div>{html.escape(json.dumps(maybe_json(gen.get('costDetails')) or {}))} (ingested, not inferred)</div>"
+                f"<div>cost_details</div><div>{html.escape(json.dumps(round_floats(maybe_json(gen.get('costDetails')) or {})))} (ingested, not inferred)</div>"
                 f"<div>time_to_first_token</div><div>{gen.get('timeToFirstToken')} s</div>"
                 f"<div>prompt link</div><div>{html.escape(str(gen.get('promptName')))} v{html.escape(str(gen.get('promptVersion')))}</div>"
                 f"<div>observation id</div><div><code>{gen['id']}</code></div>"

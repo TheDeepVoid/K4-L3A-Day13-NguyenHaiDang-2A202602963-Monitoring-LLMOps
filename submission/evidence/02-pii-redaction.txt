@@ -25,7 +25,7 @@ Note that user_id_hash is a 12-character sha256 prefix, never the raw user id.
 
 ## 2) Raw PII scan over the WHOLE log file
 
-    $ grep -cE 'vinuni\.edu\.vn|001202012345|4111 1111|C1234567|Ben Nghe' data/logs.jsonl
+    $ grep -cE '[A-Za-z0-9._-]+@[A-Za-z0-9.-]+|[0-9]{4}[ -][0-9]{4}[ -][0-9]{4}[ -][0-9]{4}|[0-9]{12}|C[0-9]{7}|0[0-9]{2}[ .-]?[0-9]{3}[ .-]?[0-9]{4}' data/logs.jsonl
     0
 
 ## 3) Each PII class maps to its replacement

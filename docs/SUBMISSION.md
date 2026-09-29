@@ -175,13 +175,13 @@ git log -1 --oneline
 
 Checklist cuối:
 
-- [ ] Source và TODO bắt buộc đã hoàn thành bằng repository cá nhân.
-- [ ] Test, log validator và dashboard validator có evidence.
-- [ ] Có tối thiểu 10 traces tự tạo trong project Langfuse cá nhân, waterfall, metadata và prompt rollback.
-- [ ] Ảnh Langfuse nhìn thấy tên project cá nhân nhưng không lộ API key/secret.
-- [ ] Dashboard đủ 6 panel; SLO/error budget và 3 alert/runbook đã hoàn thiện.
-- [ ] Incident evidence nối đúng metric → log → trace.
-- [ ] `submission/REPORT.md` đã điền đầy đủ.
-- [ ] Không có secret, PII thô hoặc nội dung sao chép từ người khác/lớp khác.
-- [ ] Tất cả link/ảnh mở được trực tiếp trên GitHub.
+- [x] Source và TODO bắt buộc đã hoàn thành bằng repository cá nhân.
+- [x] Test, log validator và dashboard validator có evidence.
+- [x] Có tối thiểu 10 traces tự tạo trong project Langfuse cá nhân, waterfall, metadata và prompt rollback.
+- [x] Ảnh Langfuse nhìn thấy tên project cá nhân nhưng không lộ API key/secret.
+- [x] Dashboard đủ 6 panel; SLO/error budget và 3 alert/runbook đã hoàn thiện.
+- [x] Incident evidence nối đúng metric → log → trace.
+- [x] `submission/REPORT.md` đã điền đầy đủ.
+- [x] Không có secret, PII thô hoặc nội dung sao chép từ người khác/lớp khác.
+- [x] Tất cả link/ảnh mở được trực tiếp trên GitHub.
 - [ ] URL repo cá nhân và commit SHA cuối đã được nộp.

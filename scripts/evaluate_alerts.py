@@ -142,16 +142,25 @@ def main() -> int:
 
     print(f"alert rules: {args.config.relative_to(REPO_ROOT)}")
     print(f"log records in file: {len(records)}\n")
-    header = f"{'alert':<22}{'state':<9}{'signal':<26}{'value':>12}  {'rule':<16}{'n':>4}  owner"
-    print(header)
-    print("-" * len(header))
-    for r in results:
-        value = "-" if r["value"] is None else f"{r['value']:g}"
-        rule = f"{r['operator']} {r['threshold']}"
-        print(
-            f"{r['name']:<22}{r['state']:<9}{r['signal']:<26}{value:>12}  {rule:<16}"
-            f"{r['samples']:>4}  {r['owner']}"
-        )
+
+    # Size every column from the data. Hardcoded widths silently ran the columns
+    # together as soon as a rule name outgrew them, which read as one word.
+    cells = [
+        (r["name"], r["state"], r["signal"],
+         "-" if r["value"] is None else f"{r['value']:g}",
+         f"{r['operator']} {r['threshold']}", str(r["samples"]), r["owner"])
+        for r in results
+    ]
+    heads = ("alert", "state", "signal", "value", "rule", "n", "owner")
+    aligns = ("<", "<", "<", ">", "<", ">", "<")
+    widths = [
+        max(len(h), *(len(c[i]) for c in cells)) if cells else len(h)
+        for i, h in enumerate(heads)
+    ]
+    print("  ".join(f"{h:{a}{w}}" for h, a, w in zip(heads, aligns, widths)).rstrip())
+    print("-" * (sum(widths) + 2 * (len(widths) - 1)))
+    for c in cells:
+        print("  ".join(f"{v:{a}{w}}" for v, a, w in zip(c, aligns, widths)).rstrip())
     for r in firing:
         print(f"\n  {r['name']} -> Slack {r['slack_channel']} ({r['owner']}), runbook {r['runbook']}")
         if r["error_breakdown"]:

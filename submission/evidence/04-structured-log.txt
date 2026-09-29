@@ -1,0 +1,72 @@
+# CP1 - STRUCTURED LOG EVIDENCE (request_received, response_sent, request_failed)
+#
+# Two POST /chat calls: one that succeeds, one that fails, so all three event
+# types appear. The correlation_id is generated in the middleware (or taken from
+# an inbound x-request-id), bound once, and shared by every line of that request;
+# the request context (user_id_hash, session_id, feature, model, env) is bound in
+# the handler before the first line is written.
+
+## Response headers (the id is returned to the caller, not only logged)
+$ curl -sD - -X POST http://127.0.0.1:8000/chat -H 'x-request-id: upstream-demo-01' ...
+  HTTP/1.1 200 OK
+  x-request-id: upstream-demo-01
+  x-response-time-ms: 153.65
+
+## Successful request, pretty-printed (jq)
+$ jq -c --indent 2 "select(.correlation_id == \"upstream-demo-01\")" data/logs.jsonl
+{
+  "service": "api",
+  "payload": {
+    "message_preview": "What is your refund policy? My email is [REDACTED_EMAIL], card [REDACTED_CREDIT_..."
+  },
+  "event": "request_received",
+  "model": "claude-sonnet-4-5",
+  "correlation_id": "upstream-demo-01",
+  "env": "dev",
+  "user_id_hash": "2a2006df8771",
+  "feature": "qa",
+  "session_id": "session-01",
+  "level": "info",
+  "ts": "2026-09-29T10:31:47.270829Z"
+}
+{
+  "service": "api",
+  "latency_ms": 151,
+  "ttft_ms": 50,
+  "tokens_in": 100,
+  "tokens_out": 127,
+  "cost_usd": 0.002205,
+  "quality_score": 0.9,
+  "tool_name": "retrieval",
+  "tool_success": true,
+  "payload": {
+    "answer_preview": "Starter answer. You should improve this output logic and add better quality chec..."
+  },
+  "event": "response_sent",
+  "model": "claude-sonnet-4-5",
+  "correlation_id": "upstream-demo-01",
+  "env": "dev",
+  "user_id_hash": "2a2006df8771",
+  "feature": "qa",
+  "session_id": "session-01",
+  "level": "info",
+  "ts": "2026-09-29T10:31:47.423619Z"
+}
+
+## As stored: one JSON object per line
+  {"event":"request_received","correlation_id":"upstream-demo-01","user_id_hash":"2a2006df8771","session_id":"session-01","feature":"qa","model":"claude-sonnet-4-5","env":"dev","latency_ms":null,"ttft_ms":null,"tokens_in":null,"tokens_out":null,"cost_usd":null,"quality_score":null,"tool_name":null,"tool_success":null,"payload":{"message_preview":"What is your refund policy? My email is [REDACTED_EMAIL], card [REDACTED_CREDIT_..."}}
+  {"event":"response_sent","correlation_id":"upstream-demo-01","user_id_hash":"2a2006df8771","session_id":"session-01","feature":"qa","model":"claude-sonnet-4-5","env":"dev","latency_ms":151,"ttft_ms":50,"tokens_in":100,"tokens_out":127,"cost_usd":0.002205,"quality_score":0.9,"tool_name":"retrieval","tool_success":true,"payload":{"answer_preview":"Starter answer. You should improve this output logic and add better quality chec..."}}
+
+## Field-by-field check against config/logging_schema.json
+  req-94e49d6b       incident_disabled  required fields present: True
+  upstream-demo-01   request_received   required fields present: True
+  upstream-demo-01   response_sent      required fields present: True
+  req-f42c6858       request_received   required fields present: True
+  req-f42c6858       request_failed     required fields present: True
+  req-b4d1fd12       incident_enabled   required fields present: True
+  raw user_id anywhere in the log: False  (must be False)
+
+## Control: an inbound x-request-id is reused, a missing one is generated
+  upstream-demo-01 was sent by the client and is echoed back above.
+  The second request sent no header, so the service generated req-f42c6858.
+  Format and hostile-input handling are asserted in tests/test_correlation_id.py.

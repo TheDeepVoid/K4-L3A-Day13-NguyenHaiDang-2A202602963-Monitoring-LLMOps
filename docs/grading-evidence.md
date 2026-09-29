@@ -4,17 +4,17 @@ Danh sách chính thức, quy tắc chụp và cách nộp nằm tại [SUBMISSI
 
 ## Evidence runtime bắt buộc
 
-- [ ] Kết quả cuối của `python -m pytest -q`.
-- [ ] `validate_logs.py` đạt tối thiểu 80/100.
-- [ ] `validate_dashboard.py` đạt 6/6.
-- [ ] Structured log có `correlation_id` và metadata.
-- [ ] PII giả đã được redact trong output thực tế.
-- [ ] Tên project Langfuse cá nhân và danh sách tối thiểu 10 traces do học viên tự tạo.
-- [ ] Một trace waterfall có root, retrieval và generation.
-- [ ] Trace metadata có correlation ID, prompt version/label, token và cost.
-- [ ] Prompt v1/v2 và bằng chứng promote/rollback.
-- [ ] Dashboard runtime đủ 6 panel, time range, đơn vị và threshold.
-- [ ] Incident metric, incident log và incident trace nối được bằng cùng correlation ID/khoảng sự cố.
+- [x] Kết quả cuối của `python -m pytest -q`.
+- [x] `validate_logs.py` đạt tối thiểu 80/100.
+- [x] `validate_dashboard.py` đạt 6/6.
+- [x] Structured log có `correlation_id` và metadata.
+- [x] PII giả đã được redact trong output thực tế.
+- [x] Tên project Langfuse cá nhân và danh sách tối thiểu 10 traces do học viên tự tạo.
+- [x] Một trace waterfall có root, retrieval và generation.
+- [x] Trace metadata có correlation ID, prompt version/label, token và cost.
+- [x] Prompt v1/v2 và bằng chứng promote/rollback.
+- [x] Dashboard runtime đủ 6 panel, time range, đơn vị và threshold.
+- [x] Incident metric, incident log và incident trace nối được bằng cùng correlation ID/khoảng sự cố.
 
 ## Artifact kiểm tra trực tiếp trên repo
 

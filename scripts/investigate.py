@@ -212,9 +212,13 @@ def step_traces(
             print(f"  {child['type']:<10} {child['name']:<20} {latency:>7.3f}s "
                   f"{share:>5.1f}% of trace  {bar}")
             if child["type"] == "GENERATION":
+                # Round the cost: the API returns a float whose raw form renders
+                # with a long tail of nines, which reads as noise in evidence.
+                cost = child.get("totalCost")
+                cost_text = "-" if cost is None else f"{cost:.6f}"
                 print(f"             model={child.get('model')} "
                       f"ttft={child.get('timeToFirstToken')} "
-                      f"usage={child.get('totalUsage')} cost={child.get('totalCost')}")
+                      f"usage={child.get('totalUsage')} cost=${cost_text}")
         if children:
             slowest = children[0]
             print(f"  -> slowest span: {slowest['name']} ({slowest.get('latency')}s of "
