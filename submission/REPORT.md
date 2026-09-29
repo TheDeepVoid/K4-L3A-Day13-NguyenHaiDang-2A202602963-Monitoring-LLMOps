@@ -494,27 +494,34 @@ của Git, mà là hàm băm của nội dung.
 
 Cách tôi xử lý, và lý do không có gì bị bỏ sót:
 
-- **Con số ở mục 1 là tip của nhánh `main` ngay sau lần push cuối.** Tôi push trước, lấy
-  `git rev-parse HEAD`, ghi con số đó vào mục 1, rồi commit lần nữa. Vì vậy con số trong báo cáo trỏ
-  tới một commit **thật, đã có trên remote, và chứa toàn bộ source + config + evidence**. Nó không
-  trỏ tới một commit "rỗng".
-- **Commit ghi lại chính dòng số đó không làm thay đổi bài.** Nó chỉ sửa văn bản ở mục 1 và mục 9. Không
-  code, test hay evidence nào thay đổi, nên chấm theo SHA của commit cha hay của commit con cho kết
-  quả giống hệt nhau.
-- **Còn một lệch nhỏ không thể tránh:** commit cuối cùng trên remote có SHA khác con số ghi ở mục 1,
-  đúng một bước. `docs/SUBMISSION.md` nói "các thay đổi sau deadline không được dùng để chấm", nên nếu
-  tôi còn commit gì sau khi nộp thì phải cập nhật lại con số. Tôi dừng commit ngay sau bước này.
-- **Cách tự kiểm chứng trước khi nộp:** in cả hai giá trị rồi so với dòng `Commit SHA cuối` ở mục 1:
+- **Con số ở mục 1 là commit chứa toàn bộ bài nộp.** Tôi push trước, lấy `git rev-parse HEAD`, ghi
+  con số đó vào mục 1, rồi commit lần nữa. Nên con số trong báo cáo trỏ tới một commit **thật, đã có
+  trên remote, và chứa đầy đủ source + config + test + evidence** — không phải một commit "rỗng", và
+  là thứ duy nhất cần nộp.
+- **Các commit sau đó chỉ sửa văn bản trong chính báo cáo này.** Không code, test, config hay evidence
+  nào thay đổi, nên chấm theo con số ở mục 1 hay theo tip của nhánh cho kết quả giống hệt nhau.
+- **Lệch đúng một bước, và đây là điều duy nhất cần biết.** Tip của `main` sẽ khác con số ở mục 1, vì
+  chính commit ghi con số đó là bước kế tiếp. `docs/SUBMISSION.md` nói "các thay đổi sau deadline không
+  được dùng để chấm", nên nếu tôi còn commit gì sau khi nộp thì phải cập nhật lại con số ở mục 1.
+- **Cách tự kiểm chứng trước khi nộp** — chạy hai lệnh này, rồi đọc kết quả:
 
   ```bash
-  git rev-parse origin/main                          # tip của nhánh đã push
-  git log -1 --format=%H origin/main -- submission/REPORT.md   # commit cuối chạm vào báo cáo
+  # 1. Tip của nhánh đã push (bằng hoặc dài hơn một bước so với mục 1)
+  git rev-parse origin/main
+
+  # 2. Có gì thay đổi giữa con số ở mục 1 và tip? Phải chỉ ra submission/REPORT.md
+  git diff --stat bf7a1e1a840b66c303000d2f84f03cc8d1c61360 origin/main
   ```
 
-  Giá trị của lệnh thứ hai chính là con số tôi ghi ở mục 1.
+  Lệnh 2 là phép kiểm chứng thật sự: nếu đầu ra chỉ gồm `submission/REPORT.md` thì con số ở mục 1 và
+  tip chứa **đúng một bài giống nhau**, và việc chấm theo giá trị nào cũng cho kết quả như nhau. Nếu có
+  file nào khác xuất hiện, nghĩa là đã có thay đổi thật sau con số đó và cần cập nhật mục 1.
 
-Nếu Lab Coach đòi SHA của **chính commit đã sửa báo cáo** (tức lệnh thứ hai), thì dùng SHA mới nhất
-của `origin/main`. Hai giá trị lệch nhau đúng một khối văn bản và không ảnh hưởng kết quả chấm.
+  Lệnh tương đương, không cần gõ SHA: `git log --oneline origin/main -- submission/REPORT.md`.
+
+Nếu Lab Coach đòi SHA của **chính commit đã sửa báo cáo** thì dùng SHA mới nhất của `origin/main`.
+Với lệnh ở trên đã xác nhận chỉ có `submission/REPORT.md` khác nhau, hai giá trị đó cùng chứa một bài
+và không ảnh hưởng kết quả chấm.
 
 - [x] Kết quả và evidence thuộc commit SHA cuối — mỗi checkpoint là một commit riêng
       (`git log --oneline`), evidence commit kèm.
