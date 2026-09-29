@@ -14,42 +14,52 @@
 
 ## 2. Evidence index
 
-Điền đúng đường dẫn tới evidence thực tế. Có thể đổi tên hoặc dùng nhiều ảnh nếu cần.
-
-Evidence dạng text/JSON (baseline và output lệnh) được commit cạnh ảnh; ảnh PNG dùng cho
-trace waterfall, prompt version, rollback và dashboard runtime.
+Evidence của tôi gồm **file text/JSON có thể mở và kiểm chứng ngay** (output thật của lệnh, kèm
+trace ID và số đo), cộng với các bản dashboard HTML tự chứa. Tôi **không** có ảnh chụp giao diện
+Langfuse vì máy này không đăng nhập được vào Langfuse UI; thay vào đó mọi nhận định về trace đều lấy
+từ API `GET /api/public/v2/observations` của chính project của tôi, nên người chấm có thể kiểm chứng
+lại bằng API key của tôi. Phần nào cần ảnh UI thì tôi ghi rõ ở mục 8.
 
 | Evidence | Đường dẫn |
 |---|---|
-| Pytest cuối | `evidence/01-pytest.png` (kèm `evidence/01-pytest.txt`) |
-| Log validator | `evidence/02-log-validator.png` |
-| Dashboard validator | `evidence/03-dashboard-validator.png` |
-| Structured log | `evidence/04-structured-log.png` |
-| PII redaction | `evidence/05-pii-redaction.png` |
-| Trace list | `evidence/06-trace-list.png` |
-| Trace waterfall | `evidence/07-trace-waterfall.png` |
-| Trace metadata | `evidence/08-trace-metadata.png` |
-| Prompt versions | `evidence/09-prompt-versions.png` |
-| Prompt rollback | `evidence/10-prompt-rollback.png` |
-| Dashboard runtime | `evidence/11-dashboard-overview.png` |
-| Incident metric | `evidence/12-incident-metric.png` |
-| Incident log | `evidence/13-incident-log.png` |
-| Incident trace | `evidence/14-incident-trace.png` |
+| Baseline (CP0) | `evidence/00-baseline-validate-logs.txt`, `00-baseline-validate-dashboard.txt`, `00-baseline-pytest.txt`, `00-baseline-metrics.json`, `00-baseline-traces.txt` |
+| Pytest + kiểm tra cuối | `evidence/01-pytest-and-final-checks.txt` |
+| Log validator | `evidence/01-log-validator-final.txt` |
+| Structured log + PII redaction | `evidence/02-pii-redaction.txt` |
+| Dashboard runtime (HTML) | `evidence/11-dashboard-runtime.html` + đối chiếu `evidence/11-dashboard-overview.txt` |
+| Trace list + waterfall | `evidence/06-trace-list-and-waterfall.txt` |
+| Trace metadata | `evidence/06-trace-list-and-waterfall.txt` (mục 1, mỗi observation in đủ field) |
+| Prompt versions | `evidence/09-prompt-versions.txt` |
+| Prompt promote/rollback | `evidence/10-prompt-rollback.txt` |
+| SLO + 4 alert bắn thật | `evidence/12-alert-evaluation.txt` |
+| Dashboard từng kịch bản | `evidence/12-dashboard-{baseline,rag_slow,tool_fail,cost_spike}.html` |
+| Điều tra incident | `evidence/13-incident-investigation.txt` + `13-dashboard-phase-{a-healthy,b-incident,c-mitigated}.html` |
+| Preventive measure 1 (queueing) | `evidence/14-queueing-before-after.txt` |
+| Preventive measure 2 (prompt cache) | `evidence/15-prompt-cache-cold-start.txt` |
+| Secret / PII scan | `evidence/16-secret-scan.txt` |
+
+Ba mục trong rubric gốc yêu cầu **ảnh** (`01-pytest.png`, `07-trace-waterfall.png`,
+`11-dashboard-overview.png`): `01` và `11` đã có bản text/HTML tương đương và kiểm chứng được; `07`
+cần ảnh giao diện Langfuse mà tôi không chụp được — nội dung waterfall đã có đầy đủ bằng text ở mục 1
+của `06-trace-list-and-waterfall.txt`.
 
 ## 3. Kết quả kỹ thuật
 
 Baseline đo ở CP0 với `python scripts/load_test.py` (10 query mẫu), API chạy bằng starter code, chưa sửa TODO nào.
 Evidence: `evidence/00-baseline-*.txt`, `evidence/00-baseline-metrics.json`.
 
+Kết quả cuối đo ở CP4 trên một run sạch: restart API rồi `python scripts/load_test.py --concurrency 5`
+(10 request). Evidence: `evidence/01-pytest-and-final-checks.txt`.
+
 | Nội dung | Baseline | Kết quả cuối | Nhận xét |
 |---|---|---|---|
-| `validate_logs.py` | **30/100** | **100/100** | Mọi mục PASS sau CP1. PII giờ được scrub ở tầng processor, không còn phụ thuộc `summarize_text` ở từng call site. |
-| `validate_dashboard.py` | `HỢP LỆ: 6/6 panel` | _xem CP2_ | Contract YAML đã đúng ngay từ starter; chỉ là chưa có dashboard runtime thật. |
-| `pytest` | 22 passed | _xem CP4_ | Test public bảo vệ contract, không cover TODO. |
-| Số traces hợp lệ | 10 trace, **chỉ root `AGENT`**, `model=null`, `usage=null` | _xem CP2_ | 10 observation `lab-agent-run`, không có child retriever/generation; `version=local-v1` vì chưa tạo prompt trong Langfuse. |
-| Số PII leak | 0 phát hiện | _xem CP1_ | Sample query chứa email + SĐT + thẻ; chỉ được che vì `summarize_text` cắt ngắn 80 ký tự. |
-| Latency P95 / TTFT P95 | **837 ms / 50 ms** | _xem CP2_ | P95 cao vì request đầu tiên lạnh; TTFT 50 ms là `time.sleep(0.05)` trong `FakeLLM`. |
-| Retrieval success rate | 100% (10/10 `tool_success=true`) | _xem CP3_ | Chưa bật incident nào. |
+| `validate_logs.py` | **30/100** | **100/100** | Mọi mục PASS sau CP1. PII được scrub ở tầng processor, không còn phụ thuộc `summarize_text` ở từng call site. |
+| `validate_dashboard.py` | `HỢP LỆ: 6/6 panel` | `HỢP LỆ: 6/6 panel` | Contract đã đúng từ starter; giá trị nằm ở dashboard runtime thật, không phải ở validator. |
+| `pytest` | 22 passed | **49 passed** | +27 test: correlation ID, PII pipeline thật, trace tree, prompt fallback, dashboard maths, alert rules. |
+| Số traces hợp lệ | 10 trace, **chỉ root `AGENT`**, `model=null`, `usage=null` | **318 trace / 298 generation** trong phiên làm việc, 100% generation có prompt link (v1 và v2), 4 loại observation: `AGENT`, `RETRIEVER`, `SPAN`, `GENERATION` | Vượt yêu cầu ≥10 trace. |
+| Số PII leak | 0 phát hiện | **0** ở cả log lẫn trace (quét toàn văn bản observation trả `none`) | Baseline "0" là do may mắn: `summarize_text` cắt 80 ký tự, chưa có processor. |
+| Latency P95 / TTFT P95 | 837 ms / 50 ms | **151 ms / 50 ms** | P95 giảm vì sửa 2 nguyên nhân thật: bỏ hàng đợi event loop và warm prompt cache. TTFT 50 ms là `time.sleep(0.05)` của `FakeLLM`. |
+| Retrieval success rate | 100% (10/10) | **100%** (10/10) | Và alert `retrieval_quality_drop` bắn đúng khi nó về 0% (`tool_fail`). |
 
 ## 4. Logging và PII
 
@@ -317,20 +327,82 @@ Ba hệ quả tôi ghi lại trong `docs/alerts.md`: (1) đo latency ở biên c
 trừ "model chậm".
 ## 8. Giải thích và tự đánh giá
 
-- **Một quyết định kỹ thuật quan trọng và lý do:**
-- **Một lỗi/blocker đã gặp:**
-- **Cách tìm nguyên nhân và xử lý:**
-- **Cách hiểu luồng Metrics → Logs → Traces:**
-- **Vai trò của prompt version, token/cost, SLO hoặc rollback trong vận hành LLM:**
-- **Điều quan trọng nhất đã học:**
-- **Hạn chế hoặc phần chưa hoàn thành, nếu có:**
+**Một quyết định kỹ thuật quan trọng và lý do.** Chuyển việc scrub PII từ *từng call site* (gọi
+`summarize_text` trước khi log) thành **một processor trong chain của structlog**. Lý do: bản gốc chỉ
+che được PII ở những chỗ đã nhớ gọi hàm — một call site mới là rò rỉ ngay, và không có cách nào bắt
+được điều đó bằng review. Sau khi chuyển, `scrub_value()` đi đệ quy mọi chuỗi trong event dict và được
+đặt **trước** `JsonlFileProcessor`/`JSONRenderer`, nên không byte nào đã serialize chứa PII thô. Tôi
+thêm một test chạy payload thô (không bọc hàm) qua pipeline thật để nguyên tắc này không bị xoá âm
+thầm khi ai đó "dọn code".
+
+**Một lỗi/blocker đã gặp.** Ba lỗi thật, tất cả đều do tin vào code thay vì kiểm chứng số đo:
+
+1. `completion_start_time` lấy từ `time.perf_counter()` — đó là monotonic counter, không phải Unix
+   timestamp — ra `timeToFirstToken = -1790668033`. Chỉ thấy được khi tôi tự tải trace về đọc.
+2. Dashboard bỏ rơi chính dòng log mới nhất vì cửa sổ thời gian nửa mở (`< end`) trong khi neo vào
+   `max(ts)`. Thấy được vì tôi in giá trị hiển thị cạnh bản tính lại bằng `jq`.
+3. Alert `slow_answers` **không bắn** đúng lúc sự cố xảy ra, vì log lúc đó trộn cả traffic bình
+   thường nên p95 rơi vào 2651 ms, dưới ngưỡng 3000 ms. Không phải bug code mà là bài học: trộn cửa
+   sổ làm che mất sự vi phạm, nên tôi ghi rõ thay vì chỉnh ngưỡng cho khớp.
+
+**Cách tìm nguyên nhân và xử lý.** Đi đúng thứ tự: metrics cho triệu chứng và mốc thời gian → log cho
+`correlation_id` → trace cho span. Ở CP3, metrics cho biết p50 nhảy 150 → 2651 ms **trong khi error
+bằng 0 và `ttft_p95` không đổi**; `ttft` bất biến loại trừ ngay giả thuyết "model chậm"; trace cho thấy
+`retrieve-context` chiếm 94.3% thời gian. Không có child observation thì bước cuối này không làm
+được — trace chỉ có một node.
+
+**Cách hiểu luồng Metrics → Logs → Traces.** Ba tầng trả lời ba câu hỏi khác nhau và **không thay thế
+nhau**: metrics trả lời "có vấn đề không, lúc nào, kiểu gì" (rẻ, nhưng trộn cửa sổ thì sai); logs trả
+lời "request nào" (cần correlation ID); traces trả lời "bước nào" (cần span con đúng kiểu). Bài học
+tôi rút ra và đã kiểm chứng bằng số: ở CP3, *cả ba tầng đều đúng mà vẫn thiếu* — client chờ 14.2 s
+trong khi mọi tầng đều báo 3.5 s, vì hàng đợi nằm ngoài mọi span. Sửa bằng `run_in_threadpool` đưa tỉ
+lệ "server nói thấp hơn thực tế" từ 4.0× xuống 1.0×.
+
+**Vai trò của prompt version, token/cost, SLO hoặc rollback trong vận hành LLM.** Prompt version cho
+phép trả lời "câu trả lời tuần trước có khác gì không" — ở đây nó còn loại trừ được giả thuyết "do
+đổi prompt" khi điều tra `rag_slow`, vì trace cho thấy đúng version baseline. Token/cost là đơn vị
+tiền thật: tôi **ingest** `cost_details` thay vì để Langfuse tự suy luận, nên con số trong trace bằng
+đúng con số trong log và trên panel cost — nếu lệch nhau thì mọi báo cáo đều đáng nghi. SLO biến "người
+dùng chờ lâu" thành con số có ngân sách, và `run_in_threadpool` chính là hành động mà error budget buộc
+phải làm. Rollback prompt là biện pháp rẻ nhất khi chất lượng đi xuống: đổi label là đổi hành vi, không
+cần deploy.
+
+**Điều quan trọng nhất đã học.** *Metric không nói dối, nhưng nó có thể đo sai thứ.* Ba ví dụ từ chính
+bài này: log bị scrub sai tầng nên "0 PII leak" ở baseline; cửa sổ trộn làm p95 không vi phạm; đo
+latency trong tiến trình nên thấp hơn thực tế 4×. Trong cả ba, số đều "đúng theo cách tính" và sai về
+quyết định. Vì vậy tôi ưu tiên: (1) scrub ở tầng sink chứ không ở call site; (2) mọi con số trong báo
+cáo đều có một cách tính lại độc lập bằng `jq`; (3) alert phải được bắn thật ít nhất một lần, nếu
+không thì đó chỉ là văn bản.
+
+**Hạn chế hoặc phần chưa hoàn thành.**
+
+- **Không có ảnh giao diện Langfuse.** Máy này không đăng nhập được vào Langfuse UI và không có
+  trình duyệt để chụp, nên các mục rubric yêu cầu ảnh (`07-trace-waterfall.png` chẳng hạn) chỉ có bản
+  text từ API. Nội dung waterfall đầy đủ, nhưng đây là thiếu sót thật và tôi nói rõ thay vì giả vờ.
+- **Chưa chạy challenge chính thức** vì `config/challenge.json` chưa được phát. Mục 7 là practice
+  scenario, được ghi rõ như vậy.
+- `FakeLLM` không đọc prompt, nên v1 và v2 không thể so sánh chất lượng (rubric cũng không chấm điểm đó).
+- `app/metrics.py` vẫn là biến toàn cục trong bộ nhớ: sống lâu hơn một process thì sẽ mất, và
+  percentile trên danh sách tăng dần sẽ tốn bộ nhớ. Đủ cho lab, chưa đủ cho production — đó là lý do
+  dashboard của tôi đọc từ file log chứ không đọc từ `/metrics`.
+- Chưa làm CI, audit log, hay cost optimization (các mục bonus), vì ưu tiên hoàn tất và kiểm chứng
+  các yêu cầu bắt buộc trước.
 
 ## 9. Checklist trước khi nộp
 
-- [ ] Kết quả và evidence thuộc commit SHA cuối.
-- [ ] Tất cả ảnh/output mở được bằng đường dẫn tương đối.
-- [ ] Incident evidence nối đúng metric → log → trace.
-- [ ] Trace/prompt evidence thuộc project Langfuse cá nhân và ảnh không lộ key/secret.
-- [ ] Repository chạy lại được theo README.
-- [ ] Không có secret, API key, PII thô hoặc evidence của người khác/lớp khác.
-- [ ] URL repo và commit SHA cuối đã được nộp trên LMS/Codelabs.
+- [x] Kết quả và evidence thuộc commit SHA cuối — mỗi checkpoint là một commit riêng
+      (`git log --oneline`), evidence commit kèm.
+- [x] Tất cả ảnh/output mở được bằng đường dẫn tương đối — mục 2 liệt kê từng file; các bản
+      dashboard HTML mở trực tiếp, không cần mạng.
+- [x] Incident evidence nối đúng metric → log → trace — `evidence/13-incident-investigation.txt`:
+      cùng `correlation_id` xuất hiện ở cả ba tầng, dẫn tới span `retrieve-context` 2.500 s.
+- [x] Trace/prompt evidence thuộc project Langfuse cá nhân (`day13-k4-l3a-2A202602963`) và không
+      lộ key/secret — evidence chỉ chứa trace ID, không có key.
+- [x] Repository chạy lại được theo README — `python -m pytest -q` 49 passed, `validate_logs.py`
+      100/100, `validate_dashboard.py` 6/6, `evaluate_alerts.py` im lặng trên traffic bình thường.
+- [x] Không có secret, API key, PII thô hoặc evidence của người khác/lớp khác —
+      `evidence/16-secret-scan.txt` quét cả working tree lẫn git history bằng chính giá trị key trong
+      `.env`; kết quả `clean`. File evidence PII đã che giá trị để không trông giống rò rỉ.
+- [ ] **Việc còn lại của tôi:** điền URL repo cá nhân, commit SHA cuối, và nộp lên LMS/Codelabs.
+- [ ] **Còn thiếu:** ảnh giao diện Langfuse (xem mục 8) và challenge chính thức khi Lab Coach phát
+      `config/challenge.json`; khi có file đó thì chạy lại `scripts/investigate.py` và điền mục 7.

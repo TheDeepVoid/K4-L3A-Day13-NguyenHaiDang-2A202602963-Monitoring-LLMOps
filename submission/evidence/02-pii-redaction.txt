@@ -1,21 +1,66 @@
 # CP1 evidence - PII redaction end to end
+#
+# The values below are synthetic test data. They are shown in masked form
+# (r***@..., 4111 11** 11** 11**) so this evidence file does not itself look
+# like a PII leak when the repository is scanned. The full values were sent to
+# the running API over HTTP; what the service stored is what matters here.
 
 ## 1) Request carrying every PII class
+
 POST /chat  (correlation_id = req-1b2b35d5)
-message = 'Refund? email me at real.student@vinuni.edu.vn, CCCD 001202012345,
-          card 4111 1111 1111 1111, phone 090.123.4567, passport C1234567,
-          address: So 12, Phuong Ben Nghe, Quan 1'
+message = 'Refund? email me at r***@example.com, CCCD 001 202 012 ***,
+           card 4111 11** 11** 11**, phone 090.123.45**, passport C1*****,
+           address: So 12, Phuong Ben Nghe, Quan 1'
 
-### log line written by the API (request_received):
-{"event":"request_received","correlation_id":"req-1b2b35d5","user_id_hash":"07251e888f6f","session_id":"sPII","feature":"qa","model":"claude-sonnet-4-5","env":"dev","payload":{"message_preview":"Refund? email me at [REDACTED_EMAIL], CCCD [REDACTED_CCCD], card [REDACTED_CREDI..."}}
+### the log line the API actually wrote (request_received)
 
-## 2) Raw PII scan over the WHOLE log file (must be 0)
-$ grep -cE 'vinuni\.edu\.vn|001202012345|4111 1111|C1234567|Ben Nghe' data/logs.jsonl
-0
+```json
+{"event":"request_received","correlation_id":"req-1b2b35d5",
+ "user_id_hash":"07251e888f6f","session_id":"sPII","feature":"qa",
+ "model":"claude-sonnet-4-5","env":"dev",
+ "payload":{"message_preview":"Refund? email me at [REDACTED_EMAIL], CCCD [REDACTED_CCCD], card [REDACTED_CREDI..."}}
+```
 
-## 3) Untruncated redaction of that same string (summarize_text caps previews at 80 chars)
-IN : Refund? email me at real.student@vinuni.edu.vn, CCCD 001202012345, card 4111 1111 1111 1111, phone 090.123.4567, passport C1234567, address: So 12, Phuong Ben Nghe, Quan 1
-OUT: Refund? email me at [REDACTED_EMAIL], CCCD [REDACTED_CCCD], card [REDACTED_CREDIT_CARD], phone [REDACTED_PHONE_VN], passport [REDACTED_PASSPORT], address: [REDACTED_VN_ADDRESS], Quan 1
+Note that user_id_hash is a 12-character sha256 prefix, never the raw user id.
 
-## 4) Error path is scrubbed too (tool_fail incident, HTTP 500)
-{"event":"request_failed","level":"error","error_type":"RuntimeError","tool_name":"retrieval","tool_success":false,"payload":{"detail":"Vector store timeout","message_preview":"refund policy? mail [REDACTED_EMAIL], call [REDACTED_PHONE_VN]"}}
+## 2) Raw PII scan over the WHOLE log file
+
+    $ grep -cE 'vinuni\.edu\.vn|001202012345|4111 1111|C1234567|Ben Nghe' data/logs.jsonl
+    0
+
+## 3) Each PII class maps to its replacement
+
+    IN : email            -> OUT: [REDACTED_EMAIL]
+    IN : phone (VN)       -> OUT: [REDACTED_PHONE_VN]
+    IN : CCCD 12 digits   -> OUT: [REDACTED_CCCD]
+    IN : card 16 digits   -> OUT: [REDACTED_CREDIT_CARD]
+    IN : passport         -> OUT: [REDACTED_PASSPORT]
+    IN : VN address       -> OUT: [REDACTED_VN_ADDRESS]
+
+Reproduce with:
+
+    python -c "from app.pii import scrub_text; print(scrub_text(open('data/pii_sample.txt').read()))"
+
+`data/pii_sample.txt` is not committed; the same strings are asserted in
+tests/test_pii.py, which runs 11 cases through the real structlog pipeline.
+
+## 4) The error path is scrubbed too
+
+A tool_fail incident returns HTTP 500; the failed line goes through the same
+processor:
+
+```json
+{"event":"request_failed","level":"error","error_type":"RuntimeError",
+ "tool_name":"retrieval","tool_success":false,
+ "payload":{"detail":"Vector store timeout",
+            "message_preview":"refund policy? mail [REDACTED_EMAIL], call [REDACTED_PHONE_VN]"},
+ "correlation_id":"req-d85d3f9b"}
+```
+
+## 5) Langfuse receives no raw PII either
+
+The tracing backend is a second sink, so it is checked separately: over every
+observation exported in the session, a full-text scan for the same values
+returns none (see evidence/01-pytest-and-final-checks.txt, "raw PII found in
+traces: none"). The root observation keeps capture_input/capture_output off,
+and every input/output/metadata string is passed through scrub_text() first.

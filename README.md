@@ -177,3 +177,26 @@ Không push bài làm trực tiếp lên repo đề bài và không dùng chung 
 - [RUBRIC.md](docs/RUBRIC.md), [RULES.md](docs/RULES.md), [SUBMISSION.md](docs/SUBMISSION.md): cách chấm, quy định và cách nộp.
 - [grading-evidence.md](docs/grading-evidence.md): checklist nhanh các ảnh/output cần thu thập.
 - [REPORT.md](submission/REPORT.md): báo cáo cá nhân duy nhất cần hoàn thiện.
+
+## Script bổ sung do học viên thêm
+
+Ngoài các script của đề bài, repo này có thêm các lệnh dùng để **chạy lại được** những gì báo cáo
+khẳng định, thay vì chỉ mô tả bằng lời:
+
+| Script | Việc |
+|---|---|
+| `scripts/investigate.py` | Chạy vòng lặp metrics → logs → traces → root cause; tìm `correlation_id` trong log rồi tra trace tương ứng trên Langfuse. |
+| `scripts/build_dashboard.py` | Sinh dashboard 6 panel từ `data/logs.jsonl` theo contract `config/dashboard.yaml`. |
+| `scripts/evaluate_alerts.py` | Tính lại từng alert rule trong `config/alert_rules.yaml` từ log và in OK/FIRING (exit code khác 0 khi có alert bắn). |
+| `scripts/prompt_ops.py` | Tạo version của prompt `day13-chat`, đổi label `production`, và rollback. |
+
+Sau khi cài đặt và chạy `scripts/load_test.py` như hướng dẫn, kiểm tra lại toàn bộ bằng:
+
+```bash
+python -m pytest -q
+python scripts/validate_logs.py
+python scripts/validate_dashboard.py
+python scripts/build_dashboard.py        # -> data/dashboard.html
+python scripts/evaluate_alerts.py        # -> OK/FIRING cho từng rule
+python scripts/prompt_ops.py show        # -> version + label hiện tại trên Langfuse
+```

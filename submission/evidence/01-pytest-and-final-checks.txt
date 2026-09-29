@@ -1,0 +1,75 @@
+# CP4 - FINAL VERIFICATION
+# clean run: restart the API, then 10 requests at concurrency 5
+
+## python -m pytest -q
+.................................................                        [100%]
+49 passed in 3.54s
+
+## python scripts/validate_logs.py
+--- Lab Verification Results ---
+Total log records analyzed: 22
+Records with missing required fields: 0
+Records with missing enrichment (context): 0
+Unique correlation IDs found: 10
+Potential PII leaks detected: 0
+
+--- Grading Scorecard (Estimates) ---
++ [PASSED] Basic JSON schema
++ [PASSED] Correlation ID propagation
++ [PASSED] Log enrichment
++ [PASSED] PII scrubbing
+
+Estimated Score: 100/100
+
+## python scripts/validate_dashboard.py
+HỢP LỆ: 6/6 panel có trong dashboard contract.
+
+## python scripts/evaluate_alerts.py   (healthy traffic: must stay quiet)
+alert rules: config/alert_rules.yaml
+log records in file: 22
+
+alert                 state    signal                           value  rule               n  owner
+--------------------------------------------------------------------------------------------------
+slow_answers          OK       latency_p95_ms                     151  > 3000            22  backend-oncall
+answers_failing       OK       error_rate_pct                       0  > 2               22  backend-oncall
+retrieval_quality_dropOK       retrieval_success_rate_pct         100  < 90              22  ml-platform
+token_cost_runaway    OK       cost_per_minute_usd             0.0222  > 0.05            22  ml-platform
+
+0 of 4 alerts firing
+
+## GET /metrics
+{
+  "traffic": 10,
+  "latency_p50": 151.0,
+  "latency_p95": 151.0,
+  "latency_p99": 151.0,
+  "ttft_p95": 50.0,
+  "avg_cost_usd": 0.0022,
+  "total_cost_usd": 0.0222,
+  "tokens_in_total": 900,
+  "tokens_out_total": 1298,
+  "error_breakdown": {},
+  "quality_avg": 0.88
+}
+
+## the same numbers recomputed from data/logs.jsonl with jq (independent)
+"  latency p50=151 p95=151 p99=151"
+"  ttft_p95=50"
+"  traffic received=10 failed=0"
+"  retrieval success=10/10"
+"  cost total=0.022170000000000002  tokens=900/1298  quality mean=0.88"
+
+## raw PII scan over the whole log file (must be 0)
+  $ grep -cE 'vinuni\.edu\.vn|001202012345|4111 1111|C1234567|0901234567' data/logs.jsonl
+0
+
+## Langfuse: traces produced in this session (Observations API v2)
+  distinct traces            : 318
+  observations               : 1000
+  observation types          : ['AGENT', 'GENERATION', 'RETRIEVER', 'SPAN']
+  root observations          : 317
+  generations                : 298
+  generations with prompt link: 298
+  prompt versions linked     : ['1', '2']
+  every trace has a GENERATION: 298/318
+  raw PII found in traces    : none
