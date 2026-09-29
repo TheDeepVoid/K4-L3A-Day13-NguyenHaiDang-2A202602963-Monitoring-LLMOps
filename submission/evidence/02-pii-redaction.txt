@@ -1,0 +1,21 @@
+# CP1 evidence - PII redaction end to end
+
+## 1) Request carrying every PII class
+POST /chat  (correlation_id = req-1b2b35d5)
+message = 'Refund? email me at real.student@vinuni.edu.vn, CCCD 001202012345,
+          card 4111 1111 1111 1111, phone 090.123.4567, passport C1234567,
+          address: So 12, Phuong Ben Nghe, Quan 1'
+
+### log line written by the API (request_received):
+{"event":"request_received","correlation_id":"req-1b2b35d5","user_id_hash":"07251e888f6f","session_id":"sPII","feature":"qa","model":"claude-sonnet-4-5","env":"dev","payload":{"message_preview":"Refund? email me at [REDACTED_EMAIL], CCCD [REDACTED_CCCD], card [REDACTED_CREDI..."}}
+
+## 2) Raw PII scan over the WHOLE log file (must be 0)
+$ grep -cE 'vinuni\.edu\.vn|001202012345|4111 1111|C1234567|Ben Nghe' data/logs.jsonl
+0
+
+## 3) Untruncated redaction of that same string (summarize_text caps previews at 80 chars)
+IN : Refund? email me at real.student@vinuni.edu.vn, CCCD 001202012345, card 4111 1111 1111 1111, phone 090.123.4567, passport C1234567, address: So 12, Phuong Ben Nghe, Quan 1
+OUT: Refund? email me at [REDACTED_EMAIL], CCCD [REDACTED_CCCD], card [REDACTED_CREDIT_CARD], phone [REDACTED_PHONE_VN], passport [REDACTED_PASSPORT], address: [REDACTED_VN_ADDRESS], Quan 1
+
+## 4) Error path is scrubbed too (tool_fail incident, HTTP 500)
+{"event":"request_failed","level":"error","error_type":"RuntimeError","tool_name":"retrieval","tool_success":false,"payload":{"detail":"Vector store timeout","message_preview":"refund policy? mail [REDACTED_EMAIL], call [REDACTED_PHONE_VN]"}}

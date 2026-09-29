@@ -43,7 +43,7 @@ Evidence: `evidence/00-baseline-*.txt`, `evidence/00-baseline-metrics.json`.
 
 | Nội dung | Baseline | Kết quả cuối | Nhận xét |
 |---|---|---|---|
-| `validate_logs.py` | **30/100** | _xem CP1_ | FAILED 3/4 mục: thiếu required field, 0 correlation ID, thiếu enrichment. PII "PASSED" một cách tình cờ vì `main.py` đã đi qua `summarize_text`; `scrub_event` chưa được nối vào chain nên chưa có nghĩa. |
+| `validate_logs.py` | **30/100** | **100/100** | Mọi mục PASS sau CP1. PII giờ được scrub ở tầng processor, không còn phụ thuộc `summarize_text` ở từng call site. |
 | `validate_dashboard.py` | `HỢP LỆ: 6/6 panel` | _xem CP2_ | Contract YAML đã đúng ngay từ starter; chỉ là chưa có dashboard runtime thật. |
 | `pytest` | 22 passed | _xem CP4_ | Test public bảo vệ contract, không cover TODO. |
 | Số traces hợp lệ | 10 trace, **chỉ root `AGENT`**, `model=null`, `usage=null` | _xem CP2_ | 10 observation `lab-agent-run`, không có child retriever/generation; `version=local-v1` vì chưa tạo prompt trong Langfuse. |
@@ -53,10 +53,39 @@ Evidence: `evidence/00-baseline-*.txt`, `evidence/00-baseline-metrics.json`.
 
 ## 4. Logging và PII
 
-- **Cách tạo/nhận và truyền correlation ID:**
-- **Các metadata được ghi vào structured log:**
-- **Cách bảo đảm PII được scrub trước khi ghi:**
-- **Cách kiểm chứng kết quả:**
+**Cách tạo/nhận và truyền correlation ID.** `CorrelationIdMiddleware` (`app/middleware.py`) chạy
+trên mọi request:
+
+1. `clear_contextvars()` đầu mỗi request — structlog contextvars sống trong context-local dict,
+   không xóa thì request sau kế thừa context của request trước và rò rỉ vào file log.
+2. Đọc header `x-request-id`; chỉ dùng lại nếu khớp allow-list `^[A-Za-z0-9_.:-]{1,64}$`, ngược lại
+   sinh mới `req-<8 hex>`. Header là input không tin cậy mà đi thẳng ra file log và response header,
+   nên chặn CRLF/quote/quá độ dài ngay ở biên.
+3. `bind_contextvars(correlation_id=...)`, lưu vào `request.state.correlation_id` để handler dùng lại.
+4. Trả về `x-request-id` và `x-response-time-ms` trên response.
+
+`correlation_id` được truyền xuống `LabAgent.run(...)` và ghi vào trace metadata, nên một ID nối được
+cả log lẫn trace.
+
+**Metadata được ghi vào structured log.** `main.chat()` bind trước dòng `request_received`, nên mọi
+log line sau đó của request đó dùng chung một context: `user_id_hash` (sha256 12 ký tự, **không**
+ghi `user_id` thô), `session_id`, `feature`, `model`, `env`, `correlation_id`. Trường này khớp với
+`app/schemas.py::LogRecord` và `config/logging_schema.json`, và là đúng những field mà sáu panel của
+dashboard đọc.
+
+**Cách bảo đảm PII được scrub trước khi ghi.** `scrub_event` là một structlog processor trong
+`app/logging_config.py`, đặt sau `format_exc_info` (để traceback đã render cũng được scrub) và
+**trước** `JsonlFileProcessor` + `JSONRenderer` (để không byte nào đã serialize chứa PII thô). Nó
+gọi `scrub_value()` đi đệ quy trên **mọi** chuỗi trong event dict, không chỉ trường `payload`:
+một call site mới quên bọc `summarize_text` vẫn không rò PII. Key của dict được giữ nguyên để
+tên field vẫn query được. Traceback đã render và nhánh lỗi (`request_failed`, `payload.detail`)
+đi qua cùng một processor.
+
+**Cách kiểm chứng kết quả.** `evidence/02-pii-redaction.txt`: một request chứa đủ 6 lớp PII
+(email, SĐT, CCCD, thẻ, hộ chiếu, địa chỉ) → dòng log chỉ còn `[REDACTED_*]`; `grep` PII thô trên
+toàn bộ `data/logs.jsonl` trả `0`; nhánh lỗi 500 cũng đã scrub. `evidence/01-log-validator-final.txt`:
+validator 100/100 với detector regex **độc lập** của chính validator. 11 test PII mới trong
+`tests/test_pii.py`, gồm một test chạy qua pipeline structlog thật.
 
 ## 5. Tracing và prompt versioning
 
